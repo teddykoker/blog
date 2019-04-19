@@ -1,4 +1,4 @@
-baseURL = "http://example.org/"
+baseURL = "https://teddykoker.netlify.com/"
 languageCode = "en-us"
 title = "Blog"
 theme = "cayman-hugo-theme"
