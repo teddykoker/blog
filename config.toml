@@ -1,0 +1,71 @@
+baseURL = "http://example.org/"
+languageCode = "en-us"
+title = "Blog"
+theme = "cayman-hugo-theme"
+
+# Syntax highlighting
+pygmentsCodefences = true
+pygmentsStyle = "pygments"
+
+[taxonomies]
+  tag = "tags"
+
+[permalinks]
+  post = "/:filename/"
+
+[params]
+  # Header text, can be markdown
+  project_name = "Teddy Koker"
+  project_tagline = "My Personal Website"
+
+  # Date format for post list and single pages
+  # For more date formats see https://gohugo.io/functions/format/
+  dateFormat = "2006-01-02"
+
+  # Footer text, can be markdown
+  footer = "&copy; Thomas Koker 2019"
+
+  # If true, the CSS/JS for Katex math typesetting are enabled
+  katex = true
+
+  # Breakpoints
+  large_breakpoint = "64em"
+  medium_breakpoint = "42em"
+
+  # Header colors
+  header_heading_color = "#fff"
+  header_background_color = "#283048"
+  header_background_color_secondary = "#859398"
+
+  # Text colors
+  section_headings_color = "#159957"
+  body_text_color = "#606c71"
+  body_link_color = "#1e6bb8"
+  blockquote_text_color = "#819198"
+
+  # Code colors
+  code_background_color = "#f3f6fa"
+  code_text_color = "#567482"
+
+  # Border colors
+  border_color = "#dce6f0"
+  table_border_color = "#e9ebec"
+  hr_border_color = "#eff0f1"
+
+[menu]
+  [[menu.nav]]
+    name = "Blog"
+    url = "/"
+    weight = 1
+  [[menu.nav]]
+    name = "Tags"
+    url = "/tags/"
+    weight = 2
+  [[menu.nav]]
+    name = "About"
+    url = "/about/"
+    weight = 3
+  [[menu.nav]]
+    name = "RSS"
+    url = "/index.xml"
+weight = 4
