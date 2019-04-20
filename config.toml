@@ -1,6 +1,6 @@
 baseURL = "https://teddykoker.netlify.com/"
 languageCode = "en-us"
-title = "Blog"
+title = "Teddy Koker"
 theme = "cayman-hugo-theme"
 
 # Syntax highlighting
