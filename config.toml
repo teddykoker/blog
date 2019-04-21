@@ -33,7 +33,7 @@ canonifyurls = true
   job = "Software Engineer"
   location = "Boston, MA"
   #picture = "https://avatars3.githubusercontent.com/u/11153048"
-  picture = ""
+  bio = "Student, Software Engineer."
 
 # Menu Configuration
 [[menu.main]]
