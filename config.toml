@@ -19,6 +19,7 @@ title = "Teddy Koker"
 theme = "hugo-tranquilpeak-theme"
 paginate = 7
 canonifyurls = true
+disqusShortname = "teddykoker"
 
 [permalinks]
   post = "/:year/:month/:slug/"
