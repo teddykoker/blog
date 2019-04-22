@@ -49,18 +49,18 @@ Now lets graph the adjusted close of UPRO since its inception versus SPY.
 start = datetime.datetime(2009, 6, 23)
 end = datetime.datetime(2019, 1, 1)
 
-spy = web.DataReader("SPY", "yahoo", start, end)
-upro = web.DataReader("UPRO", "yahoo", start, end)
+spy = web.DataReader("SPY", "yahoo", start, end)["Adj Close"]
+upro = web.DataReader("UPRO", "yahoo", start, end)["Adj Close"]
 
-spy_returns = returns(spy["Adj Close"]).rename("SPY")
-upro_returns = returns(upro["Adj Close"]).rename("UPRO")
+spy_returns = returns(spy).rename("SPY")
+upro_returns = returns(upro).rename("UPRO")
 
 spy_returns.plot(title="Growth of $1: SPY vs UPRO", legend=True, figsize=(10,6))
 upro_returns.plot(legend=True)
 
 print("CAGRs")
-print(f"SPY: {cagr(spy['Adj Close']):.2f}%")
-print(f"UPRO: {cagr(upro['Adj Close']):.2f}%")
+print(f"SPY: {cagr(spy):.2f}%")
+print(f"UPRO: {cagr(upro):.2f}%")
 ```
 
     CAGRs
@@ -72,19 +72,19 @@ print(f"UPRO: {cagr(upro['Adj Close']):.2f}%")
 As we can see, the 3x leveraged ETF does out perform its non-leveraged counterpart, but with a trade off of increased risk. Lets look at the drawdowns.
 
 ```python
-spy_drawdown = drawdown(spy["Adj Close"])
-upro_drawdown = drawdown(upro["Adj Close"])
+spy_drawdown = drawdown(spy)
+upro_drawdown = drawdown(upro)
 print("Max Drawdown")
 print(f"SPY: {spy_drawdown.idxmin()} {spy_drawdown.min():.2f}%")
 print(f"UPRO: {upro_drawdown.idxmin()} {upro_drawdown.min():.2f}%")
-upro_drawdown.plot.area(color="red", title="UPRO drawdown", figsize=(10,6))
+upro_drawdown.plot.area(color="red", title="UPRO drawdown", figsize=(10,6));
 ```
 
     Max Drawdown
     SPY: 2018-12-24 00:00:00 -19.35%
     UPRO: 2011-10-03 00:00:00 -51.73%
 
-![png](output_9_2.png)
+![png](output_9_1.png)
 
 An investor holding SPY during the above time period would have experienced a max drawdown of just under 20%, where an investor long UPRO would have had to endure losing over half their portfolio multiple times!
 
@@ -96,38 +96,37 @@ Lets write a helper function. Daily percent change is calculated by taking the d
 
 ```python
 def sim_leverage(proxy, leverage=1, expense_ratio = 0.0, initial_value=1.0):
-    pct_change = proxy["Adj Close"].pct_change(1)
-    sim = pd.DataFrame().reindex_like(proxy)
+    pct_change = proxy.pct_change(1)
     pct_change = (pct_change - expense_ratio / 252) * leverage
-    sim["Adj Close"] = (1 + pct_change).cumprod() * initial_value
-    sim.loc[sim.index[0], "Adj Close"] = initial_value
+    sim = (1 + pct_change).cumprod() * initial_value
+    sim[0] = initial_value
     return sim
 ```
 
 In order to test our simulation, lets compare a simulated UPRO to UPRO since its inception.
 
 ```python
-vfinx = web.DataReader("VFINX", "yahoo", start, end)
-upro_sim = sim_leverage(vfinx, leverage=3.0, expense_ratio=0.0092)["Adj Close"].rename("UPRO Sim")
+vfinx = web.DataReader("VFINX", "yahoo", start, end)["Adj Close"]
+upro_sim = sim_leverage(vfinx, leverage=3.0, expense_ratio=0.0092).rename("UPRO Sim")
 upro_sim.plot(title="Growth of $1: UPRO vs UPRO Sim", legend=True, figsize=(10,6))
-upro_returns.plot(legend=True)
+upro_returns.plot(legend=True);
 ```
 
-![png](output_16_1.png)
+![png](output_16_0.png)
 
 The lines are nearly identical! Lets now simulate the hypothetical performance of UPRO since the inception of VFINX.
 
 ```python
 start = datetime.datetime(1976, 8, 31)
-vfinx = web.DataReader("VFINX", "yahoo", start, end)
-upro_sim = sim_leverage(vfinx, leverage=3.0, expense_ratio=0.0092)["Adj Close"].rename("UPRO Sim")
+vfinx = web.DataReader("VFINX", "yahoo", start, end)["Adj Close"]
+upro_sim = sim_leverage(vfinx, leverage=3.0, expense_ratio=0.0092).rename("UPRO Sim")
 upro_sim.plot(title="Growth of $1: VFINX vs UPRO Sim", legend=True, figsize=(10,6))
 
-vfinx_returns = returns(vfinx["Adj Close"]).rename("VFINX")
+vfinx_returns = returns(vfinx).rename("VFINX")
 vfinx_returns.plot(legend=True)
 
 print("CAGRs")
-print(f"VFINX: {cagr(vfinx['Adj Close']):.2f}%")
+print(f"VFINX: {cagr(vfinx):.2f}%")
 print(f"UPRO Sim: {cagr(upro_sim):.2f}%")
 ```
 
@@ -141,19 +140,19 @@ The UPRO Simulation still outperforms its non-leveraged counterpart, but lets lo
 
 ```python
 upro_sim_drawdown = drawdown(upro_sim)
-vfinx_drawdown = drawdown(vfinx["Adj Close"])
+vfinx_drawdown = drawdown(vfinx)
 
 print("Max Drawdown")
 print(f"VFINX: {vfinx_drawdown.idxmin()} {vfinx_drawdown.min():.2f}%")
 print(f"UPRO Sim: {upro_sim_drawdown.idxmin()} {upro_sim_drawdown.min():.2f}%")
-upro_sim_drawdown.plot.area(color="red", title="UPRO Sim drawdown", figsize=(10,6))
+upro_sim_drawdown.plot.area(color="red", title="UPRO Sim drawdown", figsize=(10,6));
 ```
 
     Max Drawdown
     VFINX: 2009-03-09 00:00:00 -55.25%
     UPRO Sim: 2009-03-09 00:00:00 -97.11%
 
-![png](output_20_2.png)
+![png](output_20_1.png)
 
 VFINX does have a fairly substantial drawdown of over 55%, but an investor holding the simulated UPRO would encounter many large drawdowns including one over 97% during the financial crisis in 2008!
 
