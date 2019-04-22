@@ -20,6 +20,8 @@ theme = "hugo-tranquilpeak-theme"
 paginate = 7
 canonifyurls = true
 disqusShortname = "teddykoker"
+googleAnalytics = "UA-138897125-1"
+
 
 [permalinks]
   post = "/:year/:month/:slug/"
