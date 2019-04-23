@@ -19,7 +19,7 @@ title = "Teddy Koker"
 theme = "hugo-tranquilpeak-theme"
 paginate = 7
 canonifyurls = true
-disqusShortname = "teddykoker"
+#disqusShortname = "teddykoker"
 googleAnalytics = "UA-138897125-1"
 
 
