@@ -1,5 +1,5 @@
 ---
-title: "Backtesting Portfolios of Leveraged ETFSs in Python with Backtrader"
+title: "Backtesting Portfolios of Leveraged ETFs in Python with Backtrader"
 date: 2019-04-23T23:28:31-04:00
 tags:
   - backtrader
