@@ -1,11 +1,10 @@
 ---
 title: "Backtesting Portfolios of Leveraged ETFs in Python with Backtrader"
-date: 2019-04-23T23:28:31-04:00
+date: 2019-04-25T17:14:41-04:00
 tags:
   - backtrader
   - finance
   - python
-draft: true
 ---
 
 In my [last post](/2019/04/simulating-historical-performance-of-leveraged-etfs-in-python/) we discussed simulation of the 3x leveraged S&P 500 ETF, UPRO, and demonstrated why a 100% long UPRO portfolio may not be the best idea. In this post we will analyze the simulated historical performance of another 3x leveraged ETF, TMF, and explore a leveraged variation of Jack Bogle's 60 / 40 equity/bond allocation.
