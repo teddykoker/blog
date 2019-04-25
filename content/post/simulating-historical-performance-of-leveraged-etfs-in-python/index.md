@@ -158,4 +158,4 @@ VFINX does have a fairly substantial drawdown of over 55%, but an investor holdi
 
 ## Conclusion
 
-The simulated UPRO had an average compound annual growth rate of 18.76% compared to the 10.39% of the S&P 500. Although the returns are higher, the near 100% drawdowns make it an extremely risky investment to be held on its own. In the next post we will explore simulated historical performance of other leveraged ETFs and look at some multi-asset allocation strategies.
+The simulated UPRO had an average compound annual growth rate of 18.76% compared to the 10.39% of the S&P 500. Although the returns are higher, the near 100% drawdowns make it an extremely risky investment to be held on its own. In the [next post](/2019/04/backtesting-portfolios-of-leveraged-etfs-in-python-with-backtrader/) we will explore simulated historical performance of other leveraged ETFs and look at some multi-asset allocation strategies.
