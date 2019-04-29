@@ -1,7 +1,6 @@
 ---
 title: "Backtesting a Cross-Sectional Mean Reversion Strategy in Python"
 date: 2019-04-28T22:33:38-04:00
-draft: true
 tags:
   - backtrader
   - finance
