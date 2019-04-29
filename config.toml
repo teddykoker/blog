@@ -77,6 +77,12 @@ googleAnalytics = "UA-138897125-1"
   pre = "<i class=\"sidebar-button-icon fa fa-lg fa-envelope\"></i>"
   url = "mailto:teddy.koker@gmail.com"
 
+[[menu.misc]]
+  weight = 1
+  identifier = "rss"
+  name = "RSS"
+  pre = "<i class=\"sidebar-button-icon fa fa-lg fa-rss\"></i>"
+  url = "/index.xml"
 
 [params]
   # Customize date format use to render blog post date, categories and other
