@@ -140,7 +140,7 @@ cerebro.plot()[0][0]
 
 As we can see the algorithm did fairly well! It had a Sharpe ratio of 1.17 with a normalized annual return of 7.9%. Although the returns might not be much better then buying and holding SPY, the volatility is greatly reduced. We do, however, have to take a few things into consideration:
 
-1. The dataset we are using may have a slight survivorship bias as it does not contain companies who where in the S&P 500 5 years ago, but have since been removed.
+1. The dataset we are using may have a slight survivorship bias as it does not contain companies who were in the S&P 500 5 years ago, but have since been removed.
 
 2. The above backtest assumes that it will compute weights at market close then be able to trade at the exact market close price. In reality we wouldn't be able to compute weights with the exact close price, but it would be pretty close.
 
