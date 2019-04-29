@@ -144,6 +144,6 @@ As we can see the algorithm did fairly well! It had a Sharpe ratio of 1.17 with 
 
 2. The above backtest assumes that it will compute weights at market close then be able to trade at the exact market close price. In reality we wouldn't be able to compute weights with the exact close price, but it would be pretty close.
 
-3. Since this particular algorithm trades every stock in the universe at once, the investor will need a large amount of capitol to accurately match the computed weights.
+3. Since this particular algorithm trades every stock in the universe at once, the investor will need a large amount of capital to accurately match the computed weights.
 
 In my next post we will look into some improvements of the strategy, and integrate it with Interactive Brokers Python API so we can start live (paper) trading!
