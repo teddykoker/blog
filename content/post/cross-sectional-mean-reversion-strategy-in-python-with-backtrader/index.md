@@ -9,7 +9,7 @@ tags:
 
 In this post we will look at a cross-sectional mean reversion strategy from Ernest Chan's book [Algorithmic Trading: Winning Strategies and Their Rationale](https://amzn.to/2VptDjd) and backtest its performance using [Backtrader](https://www.backtrader.com/).
 
-Typically, a cross-sectional mean reversion strategy is fed a universe of stocks, where each stock has its own relative returns compared to the mean returns of the universe. A stock with a *positive* relative return is *shorted* while a stock with a *negative* relative return is *bought*, in hopes that a stock that under or outperformed the universe will soon revert to the mean of the universe.
+Typically, a cross-sectional mean reversion strategy is fed a universe of stocks, where each stock has its own relative returns compared to the mean returns of the universe. A stock with a _positive_ relative return is _shorted_ while a stock with a _negative_ relative return is _bought_, in hopes that a stock that under or outperformed the universe will soon revert to the mean of the universe.
 
 The strategy described in Chan's book is as follows: Everyday, every stock $i$ in the universe is assigned a weight $w_i$ according to the following formula:
 
@@ -20,7 +20,6 @@ Where $r_m$ is the mean returns of the universe. This weight will tell us how mu
 ## Collecting Data
 
 In order to test this strategy, we will need to select a universe of stocks. In this case we will use the S&P 500. So we don't have to re-download the data between backtests, lets download daily data for all the tickers in the S&P 500. We'll start by reading in the list of tickers from [Wikipedia](https://en.wikipedia.org/wiki/List_of_S%26P_500_companies), and save them to a file `spy/tickers.csv`.
-
 
 ```python
 import pandas as pd
@@ -36,7 +35,6 @@ pd.Series(tickers).to_csv("spy/tickers.csv")
 ```
 
 Now that we have a the list of tickers, we can download all of the data from the past 5 years. We will use `concurrent.futures.ThreadPoolExecutor` to speed up the task.
-
 
 ```python
 from concurrent import futures
@@ -59,7 +57,6 @@ Now we should have all our data in the `spy` directory! Now we can get to writin
 ## Strategy
 
 Here is the full strategy using the above formula.
-
 
 ```python
 class CrossSectionalMR(bt.Strategy):
@@ -88,8 +85,7 @@ Note: It is worth mentioning that Backtrader only calls a strategy's `next()` me
 
 ## Backtesting
 
-We're ready to backtest! Lets see how this strategy works with an initial capital of $1,000,000.
-
+We're ready to backtest! Lets see how this strategy works with an initial capital of \$1,000,000.
 
 ```python
 cerebro = bt.Cerebro(stdstats=False)
@@ -116,7 +112,6 @@ cerebro.addstrategy(CrossSectionalMR)
 results = cerebro.run()
 ```
 
-
 ```python
 print(f"Sharpe: {results[0].analyzers.sharperatio.get_analysis()['sharperatio']:.3f}")
 print(f"Norm. Annual Return: {results[0].analyzers.returns.get_analysis()['rnorm100']:.2f}%")
@@ -128,13 +123,7 @@ cerebro.plot()[0][0]
     Norm. Annual Return: 7.98%
     Max Drawdown: 6.58%
 
-
-
-
-
 ![png](output_18_1.png)
-
-
 
 ## Conclusion
 
@@ -146,4 +135,4 @@ As we can see the algorithm did fairly well! It had a Sharpe ratio of 1.17 with 
 
 3. Since this particular algorithm trades every stock in the universe at once, the investor will need a large amount of capital to accurately match the computed weights.
 
-In my next post we will look into some improvements of the strategy, and integrate it with Interactive Brokers Python API so we can start live (paper) trading!
+In my [next post](/2019/05/improving-cross-sectional-mean-reversion-strategy-in-python/) we will look into some improvements of the strategy.

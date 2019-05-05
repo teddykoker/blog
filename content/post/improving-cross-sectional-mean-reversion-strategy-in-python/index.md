@@ -1,6 +1,10 @@
 ---
 title: "Improving Cross Sectional Mean Reversion Strategy in Python"
 date: 2019-05-05T18:24:58-04:00
+tags:
+  - backtrader
+  - finance
+  - python
 draft: true
 ---
 
