@@ -5,7 +5,6 @@ tags:
   - backtrader
   - finance
   - python
-draft: true
 ---
 
 In my [last post](/2019/04/backtesting-a-cross-sectional-mean-reversion-strategy-in-python/) we implemented a cross-sectional mean reversion strategy from Ernest Chan's [Algorithmic Trading: Winning Strategies and Their Rationale](https://amzn.to/2VptDjd). In this post we will look at a few improvements we can make to the strategy so we can start live trading!
