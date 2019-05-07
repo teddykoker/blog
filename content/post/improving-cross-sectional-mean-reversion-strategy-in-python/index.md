@@ -204,4 +204,6 @@ print(f"Max Drawdown: {dd:.2f}%\nAPR: {cagr:.2f}%\nSharpe: {sharpe:.3f}")
 
 The cross-sectional mean reversion strategy with volatility filter has an average annual return of 23.3% with a Sharpe ratio of 1.668. By these metrics this is our best performing algorithm so far! It is worth noting that we have introduced a few parameters (_n_, and the standard deviation window length) that we could optimize (and possibly overfit), but we will keep it as is for now. If you would like to experiment with my strategies for yourself, feel free to clone my [notebooks](https://github.com/teddykoker/blog/tree/master/notebooks) for yourself.
 
+It is also worth noting that, like the previous mean-reversion algorithm, we do not account for survivorship bias in the S&P 500 over the 5 year period of our backtest.
+
 In the next post we will try live trading the strategy! Be sure to check out [Algorithmic Trading: Winning Strategies and Their Rationale](https://amzn.to/2VptDjd) for more strategy ideas.
