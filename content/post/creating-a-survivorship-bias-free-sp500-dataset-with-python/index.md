@@ -9,7 +9,6 @@ keywords:
   - bias
   - s&p 500
   - quandl
-draft: True
 ---
 
 When developing a stock trading strategy, it is important that the backtest be as accurate as possible. In some of my previous strategies, I have noted that the backtest did not account for survivorship bias. [Survivorship bias](https://en.wikipedia.org/wiki/Survivorship_bias) is a form of selection bias caused by only focusing on assets that have already passed some sort of selection process.
