@@ -1,5 +1,5 @@
 ---
-title: "Creating a Survivorship-Bias-Free S&P 500 Dataset with Python"
+title: "Creating a Survivorship Bias-Free S&P 500 Dataset with Python"
 date: 2019-05-12T08:35:41-04:00
 tags:
   - finance
