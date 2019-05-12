@@ -1,6 +1,10 @@
 ---
 title: "Simulating Historical Performance of Leveraged ETFs in Python"
 date: 2019-04-21T17:21:16-04:00
+keywords:
+  - leverage
+  - ETF
+  - simulation
 tags:
   - finance
   - python

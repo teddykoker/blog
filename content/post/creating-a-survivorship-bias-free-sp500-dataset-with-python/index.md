@@ -4,6 +4,11 @@ date: 2019-05-12T08:35:41-04:00
 tags:
   - finance
   - python
+keywords:
+  - survivorship
+  - bias
+  - s&p 500
+  - quandl
 draft: True
 ---
 

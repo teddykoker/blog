@@ -1,7 +1,14 @@
 ---
 title: "About Me"
 date: 2019-04-19T19:25:29-04:00
-draft: false
+keywords:
+  - personal
+  - website
+  - about
+  - teddy
+  - thomas
+  - koker
+  - WPI
 ---
 
 Thank you for visiting my website! I am currently a student at Worcester Polytechnic Institute, on track to graduate this December with a B.S. in Computer Science.
