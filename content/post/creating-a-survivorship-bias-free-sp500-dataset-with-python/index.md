@@ -77,7 +77,7 @@ soup = BeautifulSoup(html)
 holdings = soup.find("div", {"id": "holdings"})
 dates_div = holdings.find_all("div", "component-date-list")[1]
 dates_div.find_all("option")
-dates = [option.attrs["value"] for option in date_list_div.find_all("option")]
+dates = [option.attrs["value"] for option in dates_div.find_all("option")]
 
 # download constituents for each date
 constituents = pd.Series()
