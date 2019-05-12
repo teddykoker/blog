@@ -7,7 +7,7 @@ tags:
 draft: True
 ---
 
-In some of my previous strategies, I have noted that the backtest did not account for survivorship bias. [Survivorship bias](https://en.wikipedia.org/wiki/Survivorship_bias) is a form of selection bias caused by only focusing on assets that have already passed some sort of selection process.
+When developing a stock trading strategy, it is important that the backtest be as accurate as possible. In some of my previous strategies, I have noted that the backtest did not account for survivorship bias. [Survivorship bias](https://en.wikipedia.org/wiki/Survivorship_bias) is a form of selection bias caused by only focusing on assets that have already passed some sort of selection process.
 
 A simple example would be a strategy that simply buys and holds an equal allocation of the current S&P 500 constituents. We can use the S&P 500 data from a [previous post](/2019/04/backtesting-a-cross-sectional-mean-reversion-strategy-in-python). We can then compare the performance of this strategy to that of RSP, an ETF that tracks the S&P 500 Equal Weight Index:
 
@@ -311,4 +311,4 @@ rsp.plot(legend=True);
 
 ![png](output_29_0.png)
 
-The lines are nearly identical! Although my dataset is not 100% historically accurate, it is definitely a much better start than just using current S&P 500 constituents. Best of all, it only uses free data, and you can download it from my [Github](https://github.com/teddykoker/quant/survivorship-free).
+The lines are nearly identical! Although my dataset is not 100% historically accurate, it is definitely a much better start than just using current S&P 500 constituents. Best of all, it only uses free data, and you can download it from my [Github](https://github.com/teddykoker/quant/tree/master/survivorship-free). Now that we have a survivorship bias-free dataset, we can backtest future strategies with greater accuracy.
