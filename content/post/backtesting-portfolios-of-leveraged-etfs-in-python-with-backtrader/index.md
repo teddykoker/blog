@@ -10,6 +10,7 @@ tags:
   - backtrader
   - finance
   - python
+  - strategy
 ---
 
 In my [last post](/2019/04/simulating-historical-performance-of-leveraged-etfs-in-python/) we discussed simulation of the 3x leveraged S&P 500 ETF, UPRO, and demonstrated why a 100% long UPRO portfolio may not be the best idea. In this post we will analyze the simulated historical performance of another 3x leveraged ETF, TMF, and explore a leveraged variation of Jack Bogle's 60 / 40 equity/bond allocation.
