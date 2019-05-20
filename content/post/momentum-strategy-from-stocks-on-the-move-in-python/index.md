@@ -10,7 +10,6 @@ keywords:
   - momentum
   - Clenow
   - stocks on the move
-draft: true
 ---
 
 In this post we will look at the momentum strategy from Andreas F. Clenow's book [Stocks on the Move: Beating the Market with Hedge Fund Momentum Strategy](https://amzn.to/2YzEIvL) and backtest its performance using the survivorship bias-free dataset we created in my [last post](/2019/05/creating-a-survivorship-bias-free-sp-500-dataset-with-python/) with Backtrader.
