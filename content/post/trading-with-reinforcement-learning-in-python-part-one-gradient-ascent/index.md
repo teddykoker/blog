@@ -77,7 +77,7 @@ From here on I have made $x$ a matrix where $x_0 = 1$ and $x _ 1 $ is the origin
 
 Now that we have our reward function, we can find our gradient function which will be the partial derivative of $J$ with respect to $\theta$:
 
-$${\partial J(\theta)\over \partial\theta} = - {2 \over m} \sum\limits_{i=1}^{m}(\theta _{0} + \theta _{1}x^{(i)} - y^{(i)}) \cdot x^{(i)}$$
+$${\partial J(\theta)\over \partial\theta} = - {2 \over m} \sum\limits_{i=1}^{m}(\theta _{0} + \theta _{1}x_1^{(i)} - y^{(i)}) \cdot x^{(i)}$$
 
 Once again we can write this function in Python:
 
