@@ -71,7 +71,7 @@ def accuracy(x, y, theta):
     return - 1 / m * np.sum((np.dot(x, theta) - y) ** 2)
 ```
 
-From here on I have made $x$ a matrix where $x_0 = 1$ and $x_1$ are the original x values. This makes it so $\theta_ {0} + \theta_ {1} x$ can be computed with just $\theta \cdot x$.
+From here on I have made $x$ a matrix where $x_0 = 1$ and $x _ 1 $ is the original x values. This makes it so $\theta_ {0} + \theta_ {1} x$ can be computed with just $\theta \cdot x$.
 
 ### Gradient Function
 
