@@ -71,11 +71,11 @@ def accuracy(x, y, theta):
     return - 1 / m * np.sum((np.dot(x, theta) - y) ** 2)
 ```
 
-Notice that I have made `x` a matrix consisting of a vector of ones and a vector of the original x values. This makes it so $\theta_ {0} + \theta_ {1} x$ can be computed with just $\theta \cdot \x$.
+From here on I have made $x$ a matrix where $x_0 = 1$ and $x_1$ are the original x values. This makes it so $\theta_ {0} + \theta_ {1} x$ can be computed with just $\theta \cdot x$.
 
 ### Gradient Function
 
-Now that we have our reward function, we can find our gradient function which will be the partial derivative of $J$ with respect to $\theta$. For this equation we will assume that $x$ is a matrix of ones and the original x values:
+Now that we have our reward function, we can find our gradient function which will be the partial derivative of $J$ with respect to $\theta$:
 
 $${\partial J(\theta)\over \partial\theta} = - {2 \over m} \sum\limits_{i=1}^{m}(\theta _{0} + \theta _{1}x^{(i)} - y^{(i)}) \cdot x^{(i)}$$
 
