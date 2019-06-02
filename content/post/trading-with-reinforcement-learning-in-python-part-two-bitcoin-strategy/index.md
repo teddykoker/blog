@@ -188,7 +188,7 @@ plt.ylabel('Portfolio Value');
 
 ![png](output_36_0.png)
 
-The model managed to turn $1 into almost $1000, but lost almost half of it. Overall the performance looks very volatile. Lets see how it performs over the testing data:
+The model managed to turn 1 dollar into almost 1000, but lost almost half of it. Overall the performance looks very volatile. Lets see how it performs over the testing data:
 
 ```python
 test_returns = returns(positions(x_test, theta), x_test, 0.0025)
