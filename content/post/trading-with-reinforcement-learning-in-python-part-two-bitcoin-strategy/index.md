@@ -17,11 +17,10 @@ In my [last post](/2019/05/trading-with-reinforcement-learning-in-python-part-i-
 
 ## Sharpe Ratio
 
-The Sharpe ratio is a commonly used indicator to measure the risk adjusted performance of an investment over time. Assuming a risk-free rate of 0, the formula for computing Sharpe ratio is simply the mean returns of the investment divided by the standard deviation of the returns. This can be written as:
+The Sharpe ratio is a commonly used indicator to measure the risk adjusted performance of an investment over time. The formula for computing Sharpe ratio is simply the mean returns of the investment divided by the standard deviation of the returns. This can be written as:
 
 $$S_T = {A \over \sqrt{B - A^2}}$$
-
-where $A={1\over T}\sum\limits_{t=1}^{T}R_t$, and $B={1\over T}\sum\limits_{t=1}^{T}R_t^2$
+Where $A={1 \over T}\sum\limits _{t=1}^{T}R_t$, and $B={1 \over T}\sum\limits _{t=1}^{T}R_t^2$
 
 This can be coded in Python like so:
 
@@ -36,7 +35,7 @@ We know that we will use the Sharpe ratio as our reward function, but how will w
 
 $$F_t = {\tanh(\theta^T x_t) + 1 \over 2}$$
 
-This function will generate a value between 0 and 1, which will tell us what percentage of the portfolio should buy the asset. $\theta$, like in the last post, will be the parameters we will optimize using gradient ascent, and $x_t$ will be the input vector at time $t$. For this post, we will assign the input vector as $x_t = [1, r_{t - M}, ... , r_t, F_{t - 1}] $, where $r_t$ is the percent change between the asset at time $t$ and $t - 1$, and $M$ is the number of time series inputs. This means that at every time step, the model will be fed its last position and a series of historical price changes that it can use to calculate its next position. We can calculate all of the positions given price series `x`, and `theta` with the following Python function:
+This function will generate a value between 0 and 1, which will tell us what percentage of the portfolio should buy the asset. $\theta$, like in the last post, will be the parameters we will optimize using gradient ascent, and $x_t$ will be the input vector at time $t$. For this post, we will assign the input vector as $x_t = [1, r _{t - M}, \dots, r_t, F _{t - 1}]$, where $r_t$ is the percent change between the asset at time $t$ and $t - 1$, and $M$ is the number of time series inputs. This means that at every time step, the model will be fed its last position and a series of historical price changes that it can use to calculate its next position. We can calculate all of the positions given price series `x`, and `theta` with the following Python function:
 
 ```python
 import numpy as np
@@ -55,7 +54,7 @@ def positions(x, theta):
 
 Now that we know what our position will be at each time step, we can calculate our returns $R$ at each time step using the following formula:
 
-$$R_t = (1 + F_{t-1}r_t)(1 - \delta | F_t - F_{t - 1}|) - 1 $$
+$$R_t = (1 + F _{t-1}r_t)(1 - \delta | F _t - F _{t - 1}|) - 1 $$
 
 In this case $\delta$ is our transaction cost rate. We can code this as a function in Python like so:
 
@@ -80,7 +79,7 @@ These returns can then be used to calculate our Sharpe ratio.
 
 In order to perform gradient ascent, we must compute the derivative of the Sharpe ratio with respect to theta, or ${dS_T}\over{d\theta}$ Using the chain rule and the above formulas we can write it as:
 
-$${{dS_T}\over{d\theta}} = \sum\limits_{t=1}^{T} ( {{dS_T}\over{dA}}{{dA}\over{dR_t}} + {{dS_T}\over{dB}}{{dB}\over{dR_t}}) \cdot ({{dR_t}\over{dF_t}}{{dF}\over{d\theta}} + {{dR_t}\over{dF_{t-1}}}{{dF_{t-1}}\over{d\theta}})$$
+$${{dS _T}\over{d\theta}} = \sum\limits _{t=1}^{T} ( {{dS _T}\over{dA}}{{dA}\over{dR _t}} + {{dS _T}\over{dB}}{{dB}\over{dR _t}}) \cdot ({{dR _t}\over{dF _t}}{{dF}\over{d\theta}} + {{dR _t}\over{dF _{t-1}}}{{dF _{t-1}}\over{d\theta}})$$
 
 _For all of the steps to compute the above derivative as well as the partial derivatives, see Gabriel Molina's paper, [Stock Trading with Recurrent Reinforcement Learning (RRL)](http://cs229.stanford.edu/proj2006/Molina-StockTradingWithRecurrentReinforcementLearning.pdf)._ We can compute this derivative in our `gradient` function:
 
