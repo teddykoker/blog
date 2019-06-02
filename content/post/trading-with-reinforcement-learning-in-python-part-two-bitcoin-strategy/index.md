@@ -1,6 +1,7 @@
 ---
 title: "Trading with Reinforcement Learning in Python Part II: Bitcoin Strategy"
 date: 2019-06-02T19:12:54-04:00
+draft: true
 keywords:
   - reinforcement
   - learning
