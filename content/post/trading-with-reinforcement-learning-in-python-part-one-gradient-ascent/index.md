@@ -66,7 +66,7 @@ $$J(\theta) = - {1 \over m} \sum\limits_{i=1}^{m}(\theta _{0} + \theta _{1} x^{(
 Where $\theta$ is our input parameters, in this case the intercept and slope of the line we are testing. This equation can be represented in Python like so:
 
 ```python
-x = np.array([np.ones(N), x]).transpose()
+x = np.array([np.ones(m), x]).transpose()
 def accuracy(x, y, theta):
     return - 1 / m * np.sum((np.dot(x, theta) - y) ** 2)
 ```
@@ -83,7 +83,7 @@ Once again we can write this function in Python:
 
 ```python
 def gradient(x, y, theta):
-    return -1 / N * x.T.dot(np.dot(x, theta) - y)
+    return -1 / m * x.T.dot(np.dot(x, theta) - y)
 ```
 
 ### Training
