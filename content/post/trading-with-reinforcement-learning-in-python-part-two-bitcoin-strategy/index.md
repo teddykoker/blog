@@ -147,7 +147,7 @@ rets = rets[~rets.isna()]
 
 ```
 
-Now we'll take the last 500 prices, normalize them, and split into training and testing data:
+Now we'll take the last 500 prices and normalize them. We'll use the first half of the data for training, and the second half for testing:
 
 ```python
 x = np.array(rets[-500:])
