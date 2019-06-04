@@ -203,3 +203,5 @@ Once again the model outperforms the asset! This model may be able to be improve
 
 - [Reinforcement Learning for Trading](http://papers.nips.cc/paper/1551-reinforcement-learning-for-trading.pdf)
 - [Stock Trading with Recurrent Reinforcement Learning](http://cs229.stanford.edu/proj2006/Molina-StockTradingWithRecurrentReinforcementLearning.pdf)
+
+As always, the notebook for this post is available on my [Github](https://github.com/teddykoker/blog/tree/master/notebooks).
