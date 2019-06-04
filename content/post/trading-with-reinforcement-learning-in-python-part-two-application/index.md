@@ -1,5 +1,5 @@
 ---
-title: "Trading with Reinforcement Learning in Python Part II: Trading Strategy"
+title: "Trading with Reinforcement Learning in Python Part II: Application"
 date: 2019-06-04T07:08:41-04:00
 keywords:
   - reinforcement
