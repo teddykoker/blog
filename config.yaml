@@ -1,0 +1,29 @@
+baseURL: "https://teddykoker.com/"
+languageCode: en-us
+title: Teddy Koker
+theme: hyde
+googleAnalytics: UA-138897125-1
+pygmentsCodeFences: true
+pygmentsUseClasses: true
+
+permalinks:
+  post: "/:year/:month/:slug/"
+taxonomies:
+  tag: tags
+params:
+  math: true
+  description: Algorithmic Trading and Machine Learning.
+  copyright: © 2019 Teddy Koker. All Rights Reserved. <a href='/index.xml'>RSS</a>.
+menu:
+  main:
+    - name: About
+      url: /about
+    - identifier: github
+      name: GitHub
+      url: "https://github.com/teddykoker"
+    - identifier: linkedIn
+      name: Linkedin
+      url: "https://linkedin.com/in/tomkoker"
+    - identifier: mail
+      name: Mail
+      url: "mailto:teddykoker@gmail.com"
