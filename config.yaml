@@ -13,7 +13,7 @@ taxonomies:
 params:
   math: true
   description: Algorithmic Trading and Machine Learning.
-  copyright: © 2019 Teddy Koker. All Rights Reserved. <a href='/index.xml'>RSS</a>.
+  copyright: © 2019 Teddy Koker. All Rights Reserved. <a href='/index.xml'>RSS</a>. <a href='mailto:teddykoker@gmail.com'>Email</a>.
 menu:
   main:
     - name: About
@@ -24,6 +24,3 @@ menu:
     - identifier: linkedIn
       name: Linkedin
       url: "https://linkedin.com/in/tomkoker"
-    - identifier: mail
-      name: Mail
-      url: "mailto:teddykoker@gmail.com"
