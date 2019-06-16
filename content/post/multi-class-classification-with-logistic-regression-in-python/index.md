@@ -239,7 +239,8 @@ Just like the linear regression, the model improves its cost over each epoch. Le
 
 ```python
 plt.scatter(x_train[:,2], x_train[:, 3], c=y_train, alpha=0.5)
-plt.xlabel("Petal Length (cm)"); plt.ylabel("Petal Width (cm)");
+plt.xlabel("Petal Length (cm)"); plt.ylabel("Petal Width (cm)")
+
 for theta in [thetas[0],thetas[2]]:
     j = np.array([x_train[:, 2].min(), x_train[:, 2].max()])
     k = -(j * theta[1] + theta[0]) / theta[2]
@@ -277,3 +278,5 @@ This time we get an accuracy of almost 97% for both the training set and out of 
 ## Conclusion
 
 In this post we learned how we can use a simple logistic regression model to predict species of flowers given four features. This same model can be used to predict whether to buy, sell, or hold a stock using historical indicators as features, which we will look at in our next post.
+
+The Jupyter notebook of this post can be found on my [Github](https://github.com/teddykoker/blog/blob/master/notebooks/multi-class-classification-with-logistic-regression-in-python.ipynb).
