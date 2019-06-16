@@ -1,4 +1,4 @@
-baseURL = "https://teddykoker.com"
+baseURL = "https://teddykoker.com/"
 languageCode = "en-us"
 title = "Teddy Koker"
 theme = "hyde"
