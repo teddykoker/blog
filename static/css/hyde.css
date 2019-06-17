@@ -14,15 +14,6 @@
  */
 
 /*
- * Teddy Fixes
- */
-
-.highlight pre {
-  white-space: revert;
-  overflow: auto;
-}
-
-/*
  * Contents
  *
  * Global resets
