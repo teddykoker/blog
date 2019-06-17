@@ -13,6 +13,13 @@
  * https://github.com/poole/hyde.
  */
 
+/* Teddy Katex Fix */
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+
 /*
  * Contents
  *
