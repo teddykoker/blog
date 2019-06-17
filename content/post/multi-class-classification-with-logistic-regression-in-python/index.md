@@ -1,7 +1,6 @@
 ---
 title: "Multi-Class Classification with Logistic Regression in Python"
 date: 2019-06-16T19:10:51-04:00
-draft: True
 keywords:
   - logistic
   - regression
