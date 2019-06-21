@@ -13,6 +13,8 @@ taxonomies:
 params:
   math: true
   description: Algorithmic Trading and Machine Learning. <a href="https://twitter.com/teddykoker">@teddykoker</a>.
+  images:
+    - logo.png
   # copyright: © 2019 Teddy Koker. All Rights Reserved. <a href='/index.xml'>RSS</a>. <a href='mailto:teddykoker@gmail.com'>Email</a>.
 menu:
   main:
