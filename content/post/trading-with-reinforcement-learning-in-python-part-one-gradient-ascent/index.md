@@ -1,6 +1,8 @@
 ---
 title: "Trading with Reinforcement Learning in Python Part I: Gradient Ascent"
 date: 2019-05-28T08:06:21-04:00
+images:
+  - /2019/05/trading-with-reinforcement-learning-in-python-part-i-gradient-ascent/output_30_0.png
 keywords:
   - reinforcement
   - learning
@@ -33,7 +35,8 @@ Let's first generate some data to perform linear regression with.
 %matplotlib inline
 import numpy as np
 import matplotlib.pyplot as plt
-plt.rcParams["figure.figsize"] = (12, 9) # (w, h)
+plt.rcParams["figure.figsize"] = (5, 3) # (w, h)
+plt.rcParams["figure.dpi"] = 200
 ```
 
 ```python
@@ -53,7 +56,7 @@ slope, intercept = linregress(x, y)[:2]
 print(f"slope: {slope:.3f}, intercept: {intercept:.3f}")
 ```
 
-    slope: 1.760, intercept: 5.301
+    slope: 2.064, intercept: 4.889
 
 These will be the values to shoot for with our gradient ascent algorithm.
 
@@ -61,7 +64,7 @@ These will be the values to shoot for with our gradient ascent algorithm.
 
 The next step is to define our reward function. A commonly used function when measuring the accuracy of linear regression is [Mean Squared Error](https://en.wikipedia.org/wiki/Mean_squared_error) (MSE). MSE is the "average squared difference between the estimated values and what is estimated." Since MSE is an _error_ function, and we are looking for a function to maximized we will use negative MSE as our reward function, $J$:
 
-$$J(\theta) = - {1 \over m} \sum\limits_{i=1}^{m}(\theta _{0} + \theta _{1} x^{(i)} - y^{(i)})^2$$
+$$J(\theta) = - {1 \over m} \sum\limits_{i=1}^{m}(\theta _{0} + \theta _{1}x^{(i)} - y^{(i)})^2$$
 
 Where $\theta$ is our input parameters, in this case the intercept and slope of the line we are testing. This equation can be represented in Python like so:
 
@@ -92,7 +95,7 @@ Now we are ready to perform gradient ascent! We will initialize $\theta$ as $[0,
 
 ```python
 num_epochs = 500
-learning_rate = 0.1
+learning_rate = 0.01
 
 def train(x, y):
     accs = []
@@ -113,7 +116,7 @@ theta, thetas, accs = train(x, y)
 print(f"slope: {theta[1]:.3f}, intercept: {theta[0]:.3f}")
 ```
 
-    slope: 1.760, intercept: 5.301
+    slope: 2.770, intercept: 4.043
 
 We matched the linear regression benchmark! If we graph the accuracy over time, we can see that the algorithm quickly converges to a maximum accuracy:
 
@@ -123,7 +126,7 @@ plt.xlabel('Epoch Number')
 plt.ylabel('Accuracy');
 ```
 
-![png](output_27_0.png)
+![png](output_28_0.png)
 
 Finally, if we project our reward function onto a 3D surface and mark our $\theta_0$ and $\theta_1$ over time, we can see our gradient ascent algorithm gradually finding its way to the maximum:
 
@@ -133,16 +136,15 @@ i = np.linspace(-10, 20, 50)
 j = np.linspace(-10, 20, 50)
 i, j = np.meshgrid(i, j)
 k = np.array([accuracy(x, y, th) for th in zip(np.ravel(i), np.ravel(j))]).reshape(i.shape)
-fig = plt.figure()
+fig = plt.figure(figsize=(9,6))
 ax = fig.gca(projection='3d')
 ax.plot_surface(i, j, k, alpha=0.2)
-ax.plot([t[0] for t in thetas], [t[1] for t in thetas], accs, marker="o", markersize=3);
-ax.set_xlabel(r'$\theta_0$')
-ax.set_ylabel(r'$\theta_1$')
+ax.plot([t[0] for t in thetas], [t[1] for t in thetas], accs, marker="o", markersize=3, alpha=0.1);
+ax.set_xlabel(r'$\theta_0$'); ax.set_ylabel(r'$\theta_1$')
 ax.set_zlabel("Accuracy");
 ```
 
-![png](output_29_0.png)
+![png](output_30_0.png)
 
 # Conclusion
 

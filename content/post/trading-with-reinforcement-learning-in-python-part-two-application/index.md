@@ -1,6 +1,8 @@
 ---
 title: "Trading with Reinforcement Learning in Python Part II: Application"
 date: 2019-06-04T07:08:41-04:00
+images:
+  - /2019/06/trading-with-reinforcement-learning-in-python-part-ii-application/output_38_0.png
 keywords:
   - reinforcement
   - learning
@@ -18,7 +20,7 @@ In my [last post](/2019/05/trading-with-reinforcement-learning-in-python-part-i-
 
 ## Sharpe Ratio
 
-The Sharpe ratio is a commonly used indicator to measure the risk adjusted performance of an investment over time. The formula for computing Sharpe ratio is simply the mean returns of the investment divided by the standard deviation of the returns. This can be written as:
+The Sharpe ratio is a commonly used indicator to measure the risk adjusted performance of an investment over time. Assuming a risk-free rate of 0, the formula for computing Sharpe ratio is simply the mean returns of the investment divided by the standard deviation of the returns. This can be written as:
 
 $$S _T = {A \over \sqrt{B - A^2}}$$
 
@@ -117,9 +119,7 @@ def train(x, epochs=500, M=5, commission=0.0025, learning_rate = 0.1):
     theta = np.ones(M + 2)
     sharpes = np.zeros(epochs) # store sharpes over time
     for i in range(epochs):
-        grad, sharpe = gradient(x, theta, commission)
-        sharpes[i] = sharpe
-
+        grad, sharpes[i] = gradient(x, theta, commission)
         theta = theta + grad * learning_rate
 
     print("finished training")
@@ -133,7 +133,8 @@ Now that we have our model, let's test it using historical bitcoin data. I will 
 ```python
 %matplotlib inline
 import matplotlib.pyplot as plt
-plt.rcParams["figure.figsize"] = (12, 9) # (w, h)
+plt.rcParams["figure.figsize"] = (5, 3) # (w, h)
+plt.rcParams["figure.dpi"] = 200
 import pandas as pd
 
 btc = pd.read_csv("bitstampUSD.csv", names=["utc", "price", "volume"]).set_index('utc')
