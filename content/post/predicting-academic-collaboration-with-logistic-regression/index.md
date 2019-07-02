@@ -12,7 +12,7 @@ tags:
   - python
   - machine learning
 images:
-  - /2019/07/predicting-academic-collaboration-with-logistic-regression/output_14_0.png
+  - /2019/07/predicting-academic-collaboration-with-logistic-regression/output_14_1.png
 ---
 
 In my [last post](/2019/06/multi-class-classification-with-logistic-regression-in-python/), we learned what Logistic Regression is, and how it can be used to classify flowers in the Iris Dataset. In this post we will see how Logistic Regression can be applied to social networks in order to predict future collaboration between researchers. As usual we'll start by importing a few libraries:
@@ -188,7 +188,7 @@ nx.draw_spring(gc, node_size=20, alpha=0.3, node_color='b', edge_color='grey')
 plt.title("MAG 2000-2004 Largest Subgraph");
 ```
 
-![png](output_14_0.png)
+![png](output_14_1.png)
 
 It is easy to see the clusters formed by large groups of authors that have worked together. We can also see more distant nodes that only have very few connections.
 
@@ -326,43 +326,43 @@ df_train.head()
   <tbody>
     <tr>
       <th>0</th>
+      <td>0</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>0.142857</td>
-      <td>1</td>
-      <td>15</td>
-      <td>0.045455</td>
+      <td>266</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>1</th>
+      <td>0</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>0.002481</td>
-      <td>1</td>
-      <td>30804</td>
-      <td>0.002475</td>
+      <td>9966</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>2</th>
       <td>0</td>
-      <td>0.000000</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>3</td>
-      <td>0.000000</td>
+      <td>121</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>3</th>
       <td>0</td>
-      <td>0.000000</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>672</td>
-      <td>0.000000</td>
+      <td>10</td>
+      <td>0.0</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>3</td>
-      <td>0.018634</td>
+      <td>0</td>
+      <td>0.0</td>
       <td>1</td>
-      <td>6580</td>
-      <td>0.018519</td>
+      <td>4</td>
+      <td>0.0</td>
     </tr>
   </tbody>
 </table>
@@ -404,11 +404,41 @@ Now that we have the model fit, we can check the mean accuracy with our test set
 print(f"Test Accuracy: {model.score(X_test, y_test):.4f}")
 ```
 
-    Test Accuracy: 0.9373
+    Test Accuracy: 0.9370
+
+## Area Under the Curve
+
+Although the model seems to have an almost 94% accuracy in the test set, accuracy is not best metric to use. Both our training and test sets are balanced with an equal number of negative and positive samples, which means that a model predicting positive every time would still have an accuracy of 50%. A better measure of performance of a classification model is known as Area Under the Receiver Operating Characteristics, or AUROC.
+
+### Receiver Operating Characteristics
+
+The [Receiver Operating Characteristics](https://en.wikipedia.org/wiki/Receiver_operating_characteristic) (ROC) curve is measure of a binary classifier's ability to distinguish classes. The ROC curve drawn by plotting the True Positive Rate (TPR) against the False Positive Rate (FPR), each defined below, at different thresholds.
+
+$$TPR = {TP \over TP + FN}$$
+
+$$FPR = { TN \over TN + FP }$$
+
+Where $TP$, $FN$, $TN$, $FP$ are the number of True Positives, False Negatives, True Negatives, and False Positives respectively.
+
+Measuring the area under the ROC curve gives an indicator of how well the model can separating positive and negative classifications. An Area Under the Curve (AUC) of 1 means the model can correctly predict the classification every time, while an AUC of 0.5 means the model cannot at all distinguish between positive and negative classes. For more on the AUROC curve, be sure to check out this excellent [blog post](https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5).
+
+We can plot our ROC curve using scikit-learn like so:
+
+```python
+from sklearn.metrics import roc_curve, auc
+y_score = model.decision_function(X_test)
+fpr, tpr, _ = roc_curve(y_test, y_score)
+plt.plot([0, 1], [0, 1], linestyle='--')
+plt.plot(fpr, tpr, label=f"ROC curve (area = {auc(fpr, tpr):.3f})")
+plt.xlabel('False Positive Rate'); plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristics'); plt.legend();
+```
+
+![png](output_64_0.png)
 
 ## Conclusion
 
-By using our trained model on data collected from 2005 to 2009, we were able to predict whether a pair of authors would become co-authors in 2010 to 2014 with almost 94% accuracy! A model like this could be used as an application to suggest researchers to work with in the future. In addition, similar techniques could be used across different social networks to suggest friends on Facebook, or connections on LinkedIn, etc.
+By using our trained model on data collected from 2005 to 2009, we were able to predict whether a pair of authors would become co-authors in 2010 to 2014 with an AUC of 0.98! A model like this could be used as an application to suggest researchers to work with in the future. In addition, similar techniques could be used across different social networks to suggest friends on Facebook, or connections on LinkedIn, etc.
 
 There are also a number of ways the above model could be improved. All of the features currently being used are based off of neighbors of nodes formed by co-authorship. More features could be added relating to common paper topics or institutions. In addition, the logistic regression model could be replaced with [support-vector machines](https://en.wikipedia.org/wiki/Support-vector_machine), or a neural network to improve accuracy.
 
