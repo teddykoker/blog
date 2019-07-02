@@ -326,43 +326,43 @@ df_train.head()
   <tbody>
     <tr>
       <th>0</th>
-      <td>0</td>
-      <td>0.0</td>
       <td>1</td>
-      <td>266</td>
-      <td>0.0</td>
+      <td>0.142857</td>
+      <td>1</td>
+      <td>15</td>
+      <td>0.045455</td>
     </tr>
     <tr>
       <th>1</th>
-      <td>0</td>
-      <td>0.0</td>
       <td>1</td>
-      <td>9966</td>
-      <td>0.0</td>
+      <td>0.002481</td>
+      <td>1</td>
+      <td>30804</td>
+      <td>0.002475</td>
     </tr>
     <tr>
       <th>2</th>
       <td>0</td>
-      <td>0.0</td>
+      <td>0.000000</td>
       <td>1</td>
-      <td>121</td>
-      <td>0.0</td>
+      <td>3</td>
+      <td>0.000000</td>
     </tr>
     <tr>
       <th>3</th>
       <td>0</td>
-      <td>0.0</td>
+      <td>0.000000</td>
       <td>1</td>
-      <td>10</td>
-      <td>0.0</td>
+      <td>672</td>
+      <td>0.000000</td>
     </tr>
     <tr>
       <th>4</th>
-      <td>0</td>
-      <td>0.0</td>
+      <td>3</td>
+      <td>0.018634</td>
       <td>1</td>
-      <td>4</td>
-      <td>0.0</td>
+      <td>6580</td>
+      <td>0.018519</td>
     </tr>
   </tbody>
 </table>
