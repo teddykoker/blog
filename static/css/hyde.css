@@ -13,12 +13,21 @@
  * https://github.com/poole/hyde.
  */
 
-/* Teddy Katex Fix */
+/* Customizations by Teddy: */
+
 .katex-display {
   overflow-x: auto;
   overflow-y: hidden;
 }
 
+div.post div {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+table {
+  margin: 0;
+}
 
 /*
  * Contents
@@ -139,6 +148,7 @@ a.sidebar-nav-item:focus {
 
 @media (min-width: 64em) {
   .content {
+    max-width: 48rem; /* Teddy: add a little more width to max size */
     margin-left: 22rem;
     margin-right: 4rem;
   }
