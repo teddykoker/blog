@@ -15,7 +15,7 @@ images:
   - /2019/08/histopathologic-cancer-detection-with-transfer-learning/output_4_0.png
 ---
 
-In this post we will be using a method known as transfer learning in order to detect metastatic cancer in patches of images from digital pathology scans.
+In this post we will be using a method known as *transfer learning* in order to detect metastatic cancer in patches of images from digital pathology scans.
 
 
 ```python
