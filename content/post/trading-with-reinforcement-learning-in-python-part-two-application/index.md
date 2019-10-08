@@ -28,6 +28,7 @@ where $A={1\over T}\sum\limits _{t=1}^{T}R _t$, and $B={1\over T}\sum\limits _{t
 
 This can be coded in Python like so:
 
+
 ```python
 def sharpe_ratio(rets):
     return rets.mean() / rets.std()
@@ -39,7 +40,16 @@ We know that we will use the Sharpe ratio as our reward function, but how will w
 
 $$F _t = \tanh(\theta^T x _t)$$
 
-This function will generate a value between -1 and 1, which will tell us what percentage of the portfolio should buy or short the asset. $\theta$, like in the last post, will be the parameters we will optimize using gradient ascent, and $x_t$ will be the input vector at time $t$. For this post, we will assign the input vector as $x _t = [1, r _{t - M}, ... , r _t, F _{t - 1}] $, where $r_t$ is the percent change between the asset at time $t$ and $t - 1$, and $M$ is the number of time series inputs. This means that at every time step, the model will be fed its last position and a series of historical price changes that it can use to calculate its next position. We can calculate all of the positions given price series `x`, and `theta` with the following Python function:
+This function will generate a value between -1 and 1, which will tell us what
+percentage of the portfolio should buy or short the asset. $\theta$, like in the
+last post, will be the parameters we will optimize using gradient ascent, and
+$x_t$ will be the input vector at time $t$. For this post, we will assign the
+input vector as $x _t = [1, r _{t - M}, ... , r _t, F _{t - 1}] $, where $r_t$
+is the change in value between the asset at time $t$ and $t - 1$, and $M$ is the
+number of time series inputs. This means that at every time step, the model will
+be fed its last position and a series of historical price changes that it can
+use to calculate its next position. We can calculate all of the positions given
+price series `x`, and `theta` with the following Python function:
 
 ```python
 import numpy as np
@@ -60,7 +70,8 @@ Now that we know what our position will be at each time step, we can calculate o
 
 $$R _t = F _{t-1}r _t - \delta | F _t - F _{t - 1}| $$
 
-In this case $\delta$ is our commission. We can code this as a function in Python like so:
+In this case $\delta$ is our transaction cost rate. We can code this as a function in Python like so:
+
 
 ```python
 def returns(Ft, x, delta):
@@ -79,9 +90,10 @@ In order to perform gradient ascent, we must compute the derivative of the Sharp
 
 $${{dS _ T}\over{d\theta}} = \sum\limits_{t=1}^{T} ( {{dS _T}\over{dA}}{{dA}\over{dR _t}} + {{dS _T}\over{dB}}{{dB}\over{dR _t}}) \cdot ({{dR _t}\over{dF _t}}{{dF}\over{d\theta}} + {{dR _t}\over{dF _{t-1}}}{{dF _{t-1}}\over{d\theta}})$$
 
-_For all of the steps to compute the above derivative as well as the partial derivatives, see Gabriel Molina's paper, [Stock Trading with Recurrent Reinforcement Learning (RRL)](http://cs229.stanford.edu/proj2006/Molina-StockTradingWithRecurrentReinforcementLearning.pdf)._
+*For all of the steps to compute the above derivative as well as the partial derivatives, see Gabriel Molina's paper, [Stock Trading with Recurrent Reinforcement Learning (RRL)](http://cs229.stanford.edu/proj2006/Molina-StockTradingWithRecurrentReinforcementLearning.pdf).*
 
 We can compute this derivative in our `gradient` function:
+
 
 ```python
 def gradient(x, theta, delta):
@@ -89,14 +101,14 @@ def gradient(x, theta, delta):
     rets = returns(Ft, x, delta)
     T = len(x)
     M = len(theta) - 2
-
+    
     A = np.mean(rets)
     B = np.mean(np.square(rets))
     S = A / np.sqrt(B - A ** 2)
 
     grad = np.zeros(M + 2)  # initialize gradient
     dFpdtheta = np.zeros(M + 2)  # for storing previous dFdtheta
-
+    
     for t in range(M, T):
         xt = np.concatenate([[1], x[t - M:t], [Ft[t-1]]])
         dRdF = -delta * np.sign(Ft[t] - Ft[t-1])
@@ -106,7 +118,7 @@ def gradient(x, theta, delta):
         grad = grad + dSdtheta
         dFpdtheta = dFdtheta
 
-
+        
     return grad, S
 ```
 
@@ -114,14 +126,16 @@ def gradient(x, theta, delta):
 
 Now that we have our gradient function, we can optimize our parameters using gradient ascent. Like the last post, we will update our $\theta$ each epoch using $\theta = \theta + \alpha{dS _T \over d\theta}$, where $\alpha$ is our learning rate.
 
+
 ```python
 def train(x, epochs=500, M=5, commission=0.0025, learning_rate = 0.1):
     theta = np.ones(M + 2)
     sharpes = np.zeros(epochs) # store sharpes over time
     for i in range(epochs):
-        grad, sharpes[i] = gradient(x, theta, commission)
+        grad, sharpe = gradient(x, theta, commission)
         theta = theta + grad * learning_rate
-
+        sharpes[i] = sharpe
+    
     print("finished training")
     return theta, sharpes
 ```
@@ -130,11 +144,12 @@ def train(x, epochs=500, M=5, commission=0.0025, learning_rate = 0.1):
 
 Now that we have our model, let's test it using historical bitcoin data. I will be using a history of all bitcoin transactions on the Bitstamp exchange, downloaded from [bitcoincharts.com](https://api.bitcoincharts.com/v1/csv/). Let's load it in:
 
+
 ```python
 %matplotlib inline
 import matplotlib.pyplot as plt
 plt.rcParams["figure.figsize"] = (5, 3) # (w, h)
-plt.rcParams["figure.dpi"] = 200
+plt.rcParams["figure.dpi"] = 150
 import pandas as pd
 
 btc = pd.read_csv("bitstampUSD.csv", names=["utc", "price", "volume"]).set_index('utc')
@@ -142,27 +157,36 @@ btc.index = pd.to_datetime(btc.index, unit='s')
 rets = btc['price'].diff()[1:]
 ```
 
-For this strategy we will train the model on 1000 samples, and then trade on the next 200 samples. Let's normalize the data, and then split it into training and test data.
+For this strategy we will train the model on 1000 samples, and then trade on the next 200 samples. Let's split the data into training and test data, then normalize with the training data.
+
 
 ```python
 x = np.array(rets)
-x = (x - np.mean(x)) / np.std(x) # normalize
 
 N = 1000
 P = 200
 x_train = x[-(N+P):-P]
 x_test = x[-P:]
+
+std = np.std(x_train)
+mean = np.mean(x_train)
+
+x_train = (x_train - mean) / std
+x_test = (x_train - mean) / std
 ```
 
-Now we're ready to train! We'll give the model a look-back window of 5.
+Now we're ready to train! We'll give the model a look-back window of 8.
+
 
 ```python
-theta, sharpes = train(x_train, epochs=500, M=5, commission=0.0025, learning_rate=.001)
+theta, sharpes = train(x_train, epochs=500, M=8, commission=0.0025, learning_rate=.001)
 ```
 
     finished training
 
+
 In order to see how well the training did, we can graph the resulting Sharpe ratio over each epoch, and hopefully see it converge to a maximum.
+
 
 ```python
 plt.plot(sharpes)
@@ -170,14 +194,17 @@ plt.xlabel('Epoch Number')
 plt.ylabel('Sharpe Ratio');
 ```
 
+
 ![png](output_36_0.png)
+
 
 We can see that as the model trains, it converges towards a maximum Sharpe Ratio. Lets see how the model performed over the training data:
 
+
 ```python
 train_returns = returns(positions(x_train, theta), x_train, 0.0025)
-plt.plot((train_returns).cumsum(), label="Reinforcement Learning Model")
-plt.plot(x_train.cumsum(), label="Buy and Hold")
+plt.plot((train_returns).cumsum(), label="Reinforcement Learning Model", linewidth=1)
+plt.plot(x_train.cumsum(), label="Buy and Hold", linewidth=1)
 plt.xlabel('Ticks')
 plt.ylabel('Cumulative Returns');
 plt.legend()
@@ -186,12 +213,14 @@ plt.title("RL Model vs. Buy and Hold - Training Data");
 
 ![png](output_38_0.png)
 
+
 We can see that, over the training data, our reinforcement learning model greatly outperformed simply buying and holding the asset. Lets see how it does over the next 200 ticks, which have been held out from the model.
+
 
 ```python
 test_returns = returns(positions(x_test, theta), x_test, 0.0025)
-plt.plot((test_returns).cumsum(), label="Reinforcement Learning Model")
-plt.plot(x_test.cumsum(), label="Buy and Hold")
+plt.plot((test_returns).cumsum(), label="Reinforcement Learning Model", linewidth=1)
+plt.plot(x_test.cumsum(), label="Buy and Hold", linewidth=1)
 plt.xlabel('Ticks')
 plt.ylabel('Cumulative Returns');
 plt.legend()
@@ -200,9 +229,10 @@ plt.title("RL Model vs. Buy and Hold - Test Data");
 
 ![png](output_40_0.png)
 
+
 Once again the model outperforms the asset! This model may be able to be improved by engineering more features (inputs), but it is a great start. For more reading on reinforcement learning in stock trading, be sure to check out these papers:
 
-- [Reinforcement Learning for Trading](http://papers.nips.cc/paper/1551-reinforcement-learning-for-trading.pdf)
-- [Stock Trading with Recurrent Reinforcement Learning](http://cs229.stanford.edu/proj2006/Molina-StockTradingWithRecurrentReinforcementLearning.pdf)
+* [Reinforcement Learning for Trading](http://papers.nips.cc/paper/1551-reinforcement-learning-for-trading.pdf)
+* [Stock Trading with Recurrent Reinforcement Learning](http://cs229.stanford.edu/proj2006/Molina-StockTradingWithRecurrentReinforcementLearning.pdf)
 
 As always, the notebook for this post is available on my [Github](https://github.com/teddykoker/blog/tree/master/notebooks).
