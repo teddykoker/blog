@@ -172,14 +172,14 @@ std = np.std(x_train)
 mean = np.mean(x_train)
 
 x_train = (x_train - mean) / std
-x_test = (x_train - mean) / std
+x_test = (x_test - mean) / std
 ```
 
-Now we're ready to train! We'll give the model a look-back window of 8.
+Now we're ready to train! We'll give the model a look-back window of 5.
 
 
 ```python
-theta, sharpes = train(x_train, epochs=500, M=8, commission=0.0025, learning_rate=.001)
+theta, sharpes = train(x_train, epochs=500, M=5, commission=0.0025, learning_rate=.001)
 ```
 
     finished training
