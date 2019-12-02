@@ -2,7 +2,18 @@
 bibliography: 'bib.bib'
 csl: 'footnotes.csl'
 date: '2019-11-27T15:27:56-05:00'
-draft: True
+images:
+- '/2019/11/beating-the-odds-machine-learning-for-horse-racing/betting.png'
+keywords:
+- horse
+- racing
+- machine
+- learning
+- gambling
+- benter
+- model
+tags:
+- machine learning
 title: 'Beating the Odds: Machine Learning for Horse Racing'
 ---
 
