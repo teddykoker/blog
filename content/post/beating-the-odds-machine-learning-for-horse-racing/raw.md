@@ -12,7 +12,7 @@ keywords:
 tags:
   - machine learning
 images:
-  - /2019/11/beating-the-odds-machine-learning-for-horse-racing/betting.png
+  - /2019/12/beating-the-odds-machine-learning-for-horse-racing/betting.png
 ---
 
 Inspired by the story of [Bill
