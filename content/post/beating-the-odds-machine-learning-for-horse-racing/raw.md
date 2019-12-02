@@ -1,6 +1,6 @@
 ---
 title: "Beating the Odds: Machine Learning for Horse Racing"
-date: 2019-11-27T15:27:56-05:00
+date: 2019-12-01T15:27:56-05:00
 keywords:
   - horse
   - racing

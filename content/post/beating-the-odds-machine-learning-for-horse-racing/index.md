@@ -1,7 +1,7 @@
 ---
 bibliography: 'bib.bib'
 csl: 'footnotes.csl'
-date: '2019-11-27T15:27:56-05:00'
+date: '2019-12-01T15:27:56-05:00'
 images:
 - '/2019/11/beating-the-odds-machine-learning-for-horse-racing/betting.png'
 keywords:
