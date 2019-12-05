@@ -169,8 +169,8 @@ After fitting the model, we find the optimal betting threshold on the
 validation set, in this case odds of `4.9`. We can now display our
 simulated results of betting 10 dollars on each horse that our model
 indicates. To compare, we also show the results of betting 10 dollars
-every race on the horse with the best odds, and one of the best
-strategies there is, not betting at all.
+every race on the horse with the best public odds, i.e. the favorite, and one of
+the best strategies there is, not betting at all.
 
 ![](betting.png)
 
