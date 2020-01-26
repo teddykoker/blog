@@ -42,8 +42,8 @@ work must be done in engineering and selecting features in order to give
 a model more predictive power. Listed below are the features being used.
 
 **Draw**: Which gate the horse starts in. This is randomly assigned
-before the race. Horses starting closer to the inside of the track (draw
-1) generally perform *slightly* better.
+before the race. Horses starting closer to the inside of the track (draw 1) 
+generally perform *slightly* better.
 
 **Horse Win Percent**: Horse's win percent over the past 5 races.
 
