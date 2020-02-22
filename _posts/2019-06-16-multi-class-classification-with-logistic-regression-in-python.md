@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Multi-Class Classification with Logistic Regression in Python"
-image: "https://teddykoker.com/2019-06-16-multi-class-classification-with-logistic-regression-in-python_39_0.png"
+image: "https://teddykoker.com/images/2019-06-16-multi-class-classification-with-logistic-regression-in-python_39_0.png"
 ---
 A few posts back I wrote about a common parameter optimization method known as [Gradient Ascent](/2019/05/trading-with-reinforcement-learning-in-python-part-i-gradient-ascent/). In this post we will see how a similar method can be used to create a model that can classify data. This time, instead of using gradient *ascent* to maximize a reward function, we will use gradient *descent* to minimize a cost function. Let's start by importing all the libraries we need:
 
