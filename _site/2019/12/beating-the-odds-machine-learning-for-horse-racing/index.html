@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Beating the Odds: Machine Learning for Horse Racing | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Beating the Odds: Machine Learning for Horse Racing" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Inspired by the story of Bill Benter, a gambler who developed a computer model that made him close to a billion dollars1 betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to see if I could use machine learning to identify inefficiencies in horse racing wagering. Kit Chellel, The Gambler Who Cracked the Horse-Racing Code, &#8617;" />
+<meta property="og:description" content="Inspired by the story of Bill Benter, a gambler who developed a computer model that made him close to a billion dollars1 betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to see if I could use machine learning to identify inefficiencies in horse racing wagering. Kit Chellel, The Gambler Who Cracked the Horse-Racing Code, &#8617;" />
+<link rel="canonical" href="http://0.0.0.0:4000/2019/12/beating-the-odds-machine-learning-for-horse-racing/" />
+<meta property="og:url" content="http://0.0.0.0:4000/2019/12/beating-the-odds-machine-learning-for-horse-racing/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/betting.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-12-01T00:00:00-05:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://teddykoker.com/images/betting.png" />
+<meta property="twitter:title" content="Beating the Odds: Machine Learning for Horse Racing" />
+<meta name="twitter:site" content="@teddykoker" />
+<script type="application/ld+json">
+{"description":"Inspired by the story of Bill Benter, a gambler who developed a computer model that made him close to a billion dollars1 betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to see if I could use machine learning to identify inefficiencies in horse racing wagering. Kit Chellel, The Gambler Who Cracked the Horse-Racing Code, &#8617;","headline":"Beating the Odds: Machine Learning for Horse Racing","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/2019/12/beating-the-odds-machine-learning-for-horse-racing/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/betting.png","url":"http://0.0.0.0:4000/2019/12/beating-the-odds-machine-learning-for-horse-racing/","dateModified":"2019-12-01T00:00:00-05:00","datePublished":"2019-12-01T00:00:00-05:00","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="Teddy Koker" /><link rel="shortcut icon" href="/favicon.png">
+
+  <link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css"
+  integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j"
+  crossorigin="anonymous"
+  />
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js"
+    integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ"
+    crossorigin="anonymous"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js"
+    integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+    crossorigin="anonymous"
+    onload='renderMathInElement(document.body,{delimiters: [{left: "$$", right: "$$", display: true},
+                                                            {left: "$", right: "$", display: false}]})'
+  ></script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Teddy Koker</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Beating the Odds: Machine Learning for Horse Racing</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-12-01T00:00:00-05:00" itemprop="datePublished">Dec 1, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>Inspired by the story of <a href="https://en.wikipedia.org/wiki/Bill_Benter">Bill
+Benter</a>, a gambler who
+developed a computer model that made him close to a billion dollars<sup id="fnref:1"><a href="#fn:1" class="footnote">1</a></sup>
+betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to
+see if I could use machine learning to identify inefficiencies in horse
+racing wagering. <!--more--></p>
+
+<h2 id="data">Data</h2>
+
+<p>The Hong Kong Jockey Club publishes all of the results for each race on
+their <a href="https://racing.hkjc.com/racing/english/index.aspx">website</a>. I
+created a script to scrape result cards from all of the historical
+available races. After running the script I was left with a dataset of
+938 races spanning 14 months.</p>
+
+<p><img src="/images/hkjc.png" alt="" /> <em>Result card from a HKJC race.</em></p>
+
+<h2 id="feature-engineering">Feature Engineering</h2>
+
+<p>Going into this project, I had no industry knowledge about horse racing.
+Since not much information is provided with the race result cards, much
+work must be done in engineering and selecting features in order to give
+a model more predictive power. Listed below are the features being used.</p>
+
+<p><strong>Draw</strong>: Which gate the horse starts in. This is randomly assigned
+before the race. Horses starting closer to the inside of the track (draw
+1) generally perform <em>slightly</em> better.</p>
+
+<p><strong>Horse Win Percent</strong>: Horse’s win percent over the past 5 races.</p>
+
+<p><strong>Jockey Win Percent</strong>: Jockey’s win percent over the past 5 races.</p>
+
+<p><strong>Trainer Win Percent</strong>: Trainer’s win percent over the past 5 races.</p>
+
+<p><strong>Actual Weight</strong>: How much weight the horse is carrying (jockey +
+equipment).</p>
+
+<p><strong>Declared Weight</strong>: Weight of the horse.</p>
+
+<p><strong>Days Since Last Race</strong>: How many days it has been since the horse has
+last raced. A horse that had been injured in its last race may have not
+raced recently.</p>
+
+<p><strong>Mean Beyer Speed Figure</strong>: Originally introduced in Andrew Beyer’s
+<em>Picking Winners</em><sup id="fnref:2"><a href="#fn:2" class="footnote">2</a></sup>, the Beyer Speed Figure is system for rating a
+horse’s performance in a race that is comparable across different
+tracks, distances, and going (track conditions). This provides a way to
+compare horses that have not raced under the same circumstances. After
+reading Beyer’s book, I implemented his rating system on my data. For
+this feature, I calculated the mean speed figure over the horse’s past 5
+race the race.</p>
+
+<p><strong>Last Figure</strong>: Speed figure of the last race the horse was in.</p>
+
+<p><strong>Best Figure at Distance</strong>: Best speed figure the horse has gotten at
+the distance of the current race.</p>
+
+<p><strong>Best Figure at Going</strong>: Best speed figure the horse has gotten at the
+track conditions of the current race.</p>
+
+<p><strong>Best Figure at Track</strong>: Best speed figure the horse has gotten at the
+track of the current race.</p>
+
+<p>Engineering more features may yield better results; Benter’s model<sup id="fnref:3"><a href="#fn:3" class="footnote">3</a></sup>
+included many different types of features from many data sources.</p>
+
+<h2 id="model">Model</h2>
+
+<p>Before creating the model, it is important to understand the goal of the
+model. In order to not lose money at the race track, one must have an
+advantage over the gambling public. To do this we need a way of
+producing odds that are more accurate than public odds. For example,
+imagine the payout of horse is 5 to 1, and we have a model that
+indicates the horse’s probability of winning is 0.2, or odds of 4 to 1.
+Assuming our model is faithful, we would have an edge in this case, as
+we would be getting an expected return of $(0.2 * (5 + 1)) - 1 = 0.2$ or
+20%. How do we create such a model?</p>
+
+<p>Let’s first assume the existence of a function $R$ that provides a
+rating $R_h$ of a horse $h$, given input features $x_h \in \R^m$:</p>
+
+<div class="kdmath">$$
+R_h = R(x_h)
+$$</div>
+
+<p>Assuming a horse with a higher rating has a higher probability of
+winning, we can compute the estimated probability of horse $h$ winning,
+$\hat{p}_h$, given the ratings of all of the horses in the race:</p>
+
+<div class="kdmath">$$
+\hat{p}_h = \frac{\exp(R_h)}{\sum_i \exp(R_i)}
+$$</div>
+
+<p>Here we use the <code class="highlighter-rouge">softmax</code> function, as its outputs will always sum to 1,
+and maintain the same order as the input.</p>
+
+<p>Now that we know how we’ll compute our probabilities, we must define our
+rating function $R$. For this we will use a neural network that takes an
+input vector of length $m$ (where $m$ is the number of features), and
+outputs a single scalar value. The structure of this network consists of
+two <code class="highlighter-rouge">Fully Connected</code> layers, each followed by a <code class="highlighter-rouge">ReLU</code>,
+<code class="highlighter-rouge">Batch Normalization</code> and <code class="highlighter-rouge">Dropout</code> layer. Lastly, there is a final
+fully connected layer to produce the single output.</p>
+
+<p>Now we can visualize our model:</p>
+
+<p><img src="/images/horse_probs.png" alt="" /></p>
+
+<h3 id="training">Training</h3>
+
+<p>We have defined our model, but how do we train it? For each race, let’s
+call the winning horse $w$. If we had a perfect model, the predicted
+probability of $w$ winning should be 1, that is $\hat{p}_w = 1$. We can
+encourage the model to approach this value by defining a loss function
+I’ll call win-log-loss:</p>
+
+<div class="kdmath">$$
+L(\hat{p}_w) = -\log(\hat{p}_w)
+$$</div>
+
+<p>Win-log-loss will approaches 0 as the win-probability of the winner
+approaches 1, and approaches $\infty$ as the win-probability of the
+winner approaches 0. Now by minimizing win-log-loss via stochastic
+gradient descent, we can optimize the predictive ability of our model.</p>
+
+<p>It is important to mention that this method is different than a binary
+classification. Since the ratings for each horse in a race are
+calculated using a shared rating network and then converted to
+probabilities with softmax, we simultaneously reward a high rating from
+the winner while penalizing high ratings from the losers. This technique
+is similar to a <a href="https://en.wikipedia.org/wiki/Siamese_neural_network">Siamese Neural
+Network</a>, which is
+often used for facial recognition.</p>
+
+<h2 id="betting">Betting</h2>
+
+<p>Now that we have predicted win probabilities for each horse in the race
+we must come up with a method of placing bets on horses. We can compute
+our own private odds for each horse using $1/\hat{p} - 1$. Now we
+<em>could</em> just bet on every horse whose odds exceed our private odds, but
+this may lead to betting on horses with a very low chance of winning. To
+prevent this, we will only bet on horses whose odds exceed our private
+odds, <strong>and</strong> whose odds are less then a certain threshold, which we
+will find the optimal value of over on our validation set.</p>
+
+<h2 id="results">Results</h2>
+
+<p>We split the scraped race data chronologically into a training,
+validation, and test set, ensuring there would be no lookahead-bias. We
+then fit the horse-rating model to our training set, checking its
+generalization to the validation set:</p>
+
+<p><img src="/images/horse_train.png" alt="" /></p>
+
+<p>After fitting the model, we find the optimal betting threshold on the
+validation set, in this case odds of <code class="highlighter-rouge">4.9</code>. We can now display our
+simulated results of betting 10 dollars on each horse that our model
+indicates. To compare, we also show the results of betting 10 dollars
+every race on the horse with the best odds, and one of the best
+strategies there is, not betting at all.</p>
+
+<p><img src="/images/betting.png" alt="" /></p>
+
+<p>We can see that always betting on the horse with the best odds is a
+sure-fire way to lose all your money. While the model was profitable
+over both the training and validation sets, it is hard to say for sure
+how reliable it is because of the very low frequency of its betting.</p>
+
+<p>Benter claimed that his era was a “Golden Age” for computer betting
+systems, where computer technology had only recently become affordable
+and powerful enough to implement such systems. Today, the betting market
+has likely become much more efficient with large numbers of computer
+handicappers and more detailed information available to the public.
+Nevertheless, developing a profitable model, especially with modern
+machine learning methods, may be a feasible task.</p>
+
+<p>Thank you for reading! For any questions regarding this post or others,
+feel free to reach out on twitter:
+<a href="https://twitter.com/teddykoker">@teddykoker</a>.</p>
+
+<div class="footnotes">
+  <ol>
+    <li id="fn:1">
+      <p>Kit Chellel, <em>The Gambler Who Cracked the Horse-Racing Code</em>,
+2018,
+<a href="https://www.bloomberg.com/news/features/2018-05-03/the-gambler-who-cracked-the-horse-racing-code">https://www.bloomberg.com/news/features/2018-05-03/the-gambler-who-cracked-the-horse-racing-code</a>. <a href="#fnref:1" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:2">
+      <p>Andrew Beyer, <em>Picking Winners: A Horseplayer’s Guide</em> (Houghton
+Mifflin Harcourt, 1994). <a href="#fnref:2" class="reversefootnote">&#8617;</a></p>
+    </li>
+    <li id="fn:3">
+      <p>William Benter, “Computer Based Horse Race Handicapping and
+Wagering Systems: A Report,” in <em>Efficiency of Racetrack Betting
+Markets</em> (World Scientific, 2008), 183–98. <a href="#fnref:3" class="reversefootnote">&#8617;</a></p>
+    </li>
+  </ol>
+</div>
+
+  </div><a class="u-url" href="/2019/12/beating-the-odds-machine-learning-for-horse-racing/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Teddy Koker</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Teddy Koker</li><li><a class="u-email" href="mailto:teddy.koker@gmail.com">teddy.koker@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/teddykoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">teddykoker</span></a></li><li><a href="https://www.linkedin.com/in/tomkoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg> <span class="username">tomkoker</span></a></li><li><a href="https://www.twitter.com/teddykoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">teddykoker</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Algorithmic Trading and Machine Learning.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

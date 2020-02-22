@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Backtesting a Cross-Sectional Mean Reversion Strategy in Python | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Backtesting a Cross-Sectional Mean Reversion Strategy in Python" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post we will look at a cross-sectional mean reversion strategy from Ernest Chan’s book Algorithmic Trading: Winning Strategies and Their Rationale and backtest its performance using Backtrader." />
+<meta property="og:description" content="In this post we will look at a cross-sectional mean reversion strategy from Ernest Chan’s book Algorithmic Trading: Winning Strategies and Their Rationale and backtest its performance using Backtrader." />
+<link rel="canonical" href="http://0.0.0.0:4000/2019/04/backtesting-a-cross-sectional-mean-reversion-strategy-in-python/" />
+<meta property="og:url" content="http://0.0.0.0:4000/2019/04/backtesting-a-cross-sectional-mean-reversion-strategy-in-python/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="http://teddykoker.com/images/2019-04-28-backtesting-a-cross-sectional-mean-reversion-strategy-in-python_18_1.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-04-28T00:00:00-04:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="http://teddykoker.com/images/2019-04-28-backtesting-a-cross-sectional-mean-reversion-strategy-in-python_18_1.png" />
+<meta property="twitter:title" content="Backtesting a Cross-Sectional Mean Reversion Strategy in Python" />
+<meta name="twitter:site" content="@teddykoker" />
+<script type="application/ld+json">
+{"description":"In this post we will look at a cross-sectional mean reversion strategy from Ernest Chan’s book Algorithmic Trading: Winning Strategies and Their Rationale and backtest its performance using Backtrader.","headline":"Backtesting a Cross-Sectional Mean Reversion Strategy in Python","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/2019/04/backtesting-a-cross-sectional-mean-reversion-strategy-in-python/"},"@type":"BlogPosting","image":"http://teddykoker.com/images/2019-04-28-backtesting-a-cross-sectional-mean-reversion-strategy-in-python_18_1.png","url":"http://0.0.0.0:4000/2019/04/backtesting-a-cross-sectional-mean-reversion-strategy-in-python/","dateModified":"2019-04-28T00:00:00-04:00","datePublished":"2019-04-28T00:00:00-04:00","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="Teddy Koker" /><link rel="shortcut icon" href="/favicon.png">
+
+  <link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css"
+  integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j"
+  crossorigin="anonymous"
+  />
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js"
+    integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ"
+    crossorigin="anonymous"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js"
+    integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+    crossorigin="anonymous"
+    onload='renderMathInElement(document.body,{delimiters: [{left: "$$", right: "$$", display: true},
+                                                            {left: "$", right: "$", display: false}]})'
+  ></script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Teddy Koker</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Backtesting a Cross-Sectional Mean Reversion Strategy in Python</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-04-28T00:00:00-04:00" itemprop="datePublished">Apr 28, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>In this post we will look at a cross-sectional mean reversion strategy from Ernest Chan’s book <a href="https://amzn.to/2VptDjd">Algorithmic Trading: Winning Strategies and Their Rationale</a> and backtest its performance using <a href="https://www.backtrader.com/">Backtrader</a>.</p>
+
+<p>Typically, a cross-sectional mean reversion strategy is fed a universe of stocks, where each stock has its own relative returns compared to the mean returns of the universe. A stock with a <em>positive</em> relative return is <em>shorted</em> while a stock with a <em>negative</em> relative return is <em>bought</em>, in hopes that a stock that under or outperformed the universe will soon revert to the mean of the universe.</p>
+
+<p>The strategy described in Chan’s book is as follows: Everyday, every stock $i$ in the universe is assigned a weight $w_i$ according to the following formula:</p>
+
+<div class="kdmath">$$
+w_i = -(r_i - r_m) / \sum_k | r_k - r_m |
+$$</div>
+
+<p>Where $r_m$ is the mean returns of the universe. This weight will tell us how much of the portfolio will be long or short that particular stock. As we can see in the formula, the farther an individual stock’s returns are from the mean, the greater its weight will be.</p>
+
+<h2 id="collecting-data">Collecting Data</h2>
+
+<p>In order to test this strategy, we will need to select a universe of stocks. In this case we will use the S&amp;P 500. So we don’t have to re-download the data between backtests, lets download daily data for all the tickers in the S&amp;P 500. We’ll start by reading in the list of tickers from <a href="https://en.wikipedia.org/wiki/List_of_S%26P_500_companies">Wikipedia</a>, and save them to a file <code class="highlighter-rouge">spy/tickers.csv</code>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">pandas_datareader.data</span> <span class="k">as</span> <span class="n">web</span>
+<span class="kn">import</span> <span class="nn">backtrader</span> <span class="k">as</span> <span class="n">bt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span> 
+
+<span class="n">data</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_html</span><span class="p">(</span><span class="s">'https://en.wikipedia.org/wiki/List_of_S</span><span class="si">%26</span><span class="s">P_500_companies'</span><span class="p">)</span>
+<span class="n">table</span> <span class="o">=</span> <span class="n">data</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+<span class="n">tickers</span> <span class="o">=</span> <span class="n">table</span><span class="p">[</span><span class="mi">1</span><span class="p">:][</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">pd</span><span class="o">.</span><span class="n">Series</span><span class="p">(</span><span class="n">tickers</span><span class="p">)</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="s">"spy/tickers.csv"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Now that we have a the list of tickers, we can download all of the data from the past 5 years. We will use <code class="highlighter-rouge">concurrent.futures.ThreadPoolExecutor</code> to speed up the task.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">concurrent</span> <span class="kn">import</span> <span class="n">futures</span> 
+
+<span class="n">end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">()</span> 
+<span class="n">start</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="n">end</span><span class="o">.</span><span class="n">year</span> <span class="o">-</span> <span class="mi">5</span><span class="p">,</span> <span class="n">end</span><span class="o">.</span><span class="n">month</span> <span class="p">,</span> <span class="n">end</span><span class="o">.</span><span class="n">day</span><span class="p">)</span>
+<span class="n">bad</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">def</span> <span class="nf">download</span><span class="p">(</span><span class="n">ticker</span><span class="p">):</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="n">ticker</span><span class="p">,</span><span class="s">'iex'</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)</span>
+    <span class="n">df</span><span class="o">.</span><span class="n">to_csv</span><span class="p">(</span><span class="n">f</span><span class="s">"spy/{ticker}.csv"</span><span class="p">)</span>
+
+<span class="k">with</span> <span class="n">futures</span><span class="o">.</span><span class="n">ThreadPoolExecutor</span><span class="p">(</span><span class="mi">50</span><span class="p">)</span> <span class="k">as</span> <span class="n">executor</span><span class="p">:</span> 
+    <span class="n">res</span> <span class="o">=</span> <span class="n">executor</span><span class="o">.</span><span class="nb">map</span><span class="p">(</span><span class="n">download</span><span class="p">,</span> <span class="n">tickers</span><span class="p">)</span> 
+
+</code></pre></div></div>
+
+<p>Now we should have all our data in the <code class="highlighter-rouge">spy</code> directory! Now we can get to writing the strategy.</p>
+
+<h2 id="strategy">Strategy</h2>
+
+<p>Here is the full strategy using the above formula.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">CrossSectionalMR</span><span class="p">(</span><span class="n">bt</span><span class="o">.</span><span class="n">Strategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">prenext</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="nb">next</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># only look at data that existed yesterday
+</span>        <span class="n">available</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">datas</span><span class="p">))</span> 
+        
+        <span class="n">rets</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">available</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">available</span><span class="p">):</span>
+            <span class="c1"># calculate individual daily returns
+</span>            <span class="n">rets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">close</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-</span> <span class="n">d</span><span class="o">.</span><span class="n">close</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">/</span> <span class="n">d</span><span class="o">.</span><span class="n">close</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+
+        <span class="c1"># calculate weights using formula
+</span>        <span class="n">market_ret</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rets</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">rets</span> <span class="o">-</span> <span class="n">market_ret</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">/</span> <span class="n">np</span><span class="o">.</span><span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="nb">abs</span><span class="p">(</span><span class="n">weights</span><span class="p">))</span>
+        
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">available</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">order_target_percent</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Note: It is worth mentioning that Backtrader only calls a strategy’s <code class="highlighter-rouge">next()</code> method when it has a price tick from every data feed. This means that by default the strategy will not trade if, for example, a company in the universe has not started trading publicly yet. We can circumvent this issue by calling <code class="highlighter-rouge">next()</code> in <code class="highlighter-rouge">prenext()</code> and then applying the weight calculation formula to only stocks in which we have data to.</p>
+
+<h2 id="backtesting">Backtesting</h2>
+
+<p>We’re ready to backtest! Lets see how this strategy works with an initial capital of $1,000,000.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cerebro</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">Cerebro</span><span class="p">(</span><span class="n">stdstats</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="o">.</span><span class="n">broker</span><span class="o">.</span><span class="n">set_coc</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">tickers</span><span class="p">:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="n">bt</span><span class="o">.</span><span class="n">feeds</span><span class="o">.</span><span class="n">GenericCSVData</span><span class="p">(</span>
+        <span class="n">fromdate</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+        <span class="n">todate</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+        <span class="n">dataname</span><span class="o">=</span><span class="n">f</span><span class="s">"spy/{ticker}.csv"</span><span class="p">,</span>
+        <span class="n">dtformat</span><span class="o">=</span><span class="p">(</span><span class="s">'</span><span class="si">%</span><span class="s">Y-</span><span class="si">%</span><span class="s">m-</span><span class="si">%</span><span class="s">d'</span><span class="p">),</span>
+        <span class="n">openinterest</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">nullvalue</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">plot</span><span class="o">=</span><span class="bp">False</span>
+    <span class="p">)</span>
+    <span class="n">cerebro</span><span class="o">.</span><span class="n">adddata</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="n">cerebro</span><span class="o">.</span><span class="n">broker</span><span class="o">.</span><span class="n">setcash</span><span class="p">(</span><span class="mi">1_000_000</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="o">.</span><span class="n">addobserver</span><span class="p">(</span><span class="n">bt</span><span class="o">.</span><span class="n">observers</span><span class="o">.</span><span class="n">Value</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="o">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="o">.</span><span class="n">analyzers</span><span class="o">.</span><span class="n">SharpeRatio</span><span class="p">,</span> <span class="n">riskfreerate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="o">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="o">.</span><span class="n">analyzers</span><span class="o">.</span><span class="n">Returns</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="o">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="o">.</span><span class="n">analyzers</span><span class="o">.</span><span class="n">DrawDown</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="o">.</span><span class="n">addstrategy</span><span class="p">(</span><span class="n">CrossSectionalMR</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">cerebro</span><span class="o">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"Sharpe: {results[0].analyzers.sharperatio.get_analysis()['sharperatio']:.3f}"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"Norm. Annual Return: {results[0].analyzers.returns.get_analysis()['rnorm100']:.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"Max Drawdown: {results[0].analyzers.drawdown.get_analysis()['max']['drawdown']:.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="o">.</span><span class="n">plot</span><span class="p">()[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Sharpe: 1.173
+Norm. Annual Return: 7.98%
+Max Drawdown: 6.58%
+</code></pre></div></div>
+
+<p><img src="/images/2019-04-28-backtesting-a-cross-sectional-mean-reversion-strategy-in-python_18_1.png" alt="png" /></p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>As we can see the algorithm did fairly well! It had a Sharpe ratio of 1.17 with a normalized annual return of 7.9%. Although the returns might not be much better then buying and holding SPY, the volatility is greatly reduced. We do, however, have to take a few things into consideration:</p>
+
+<ol>
+  <li>
+    <p>The dataset we are using may have a slight survivorship bias as it does not contain companies who where in the S&amp;P 500 5 years ago, but have since been removed.</p>
+  </li>
+  <li>
+    <p>The above backtest assumes that it will compute weights at market close then be able to trade at the exact market close price. In reality we wouldn’t be able to compute weights with the exact close price, but it would be pretty close.</p>
+  </li>
+  <li>
+    <p>Since this particular algorithm trades every stock in the universe at once, the investor will need a large amount of capitol to accurately match the computed weights.</p>
+  </li>
+</ol>
+
+  </div><a class="u-url" href="/2019/04/backtesting-a-cross-sectional-mean-reversion-strategy-in-python/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Teddy Koker</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Teddy Koker</li><li><a class="u-email" href="mailto:teddy.koker@gmail.com">teddy.koker@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/teddykoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">teddykoker</span></a></li><li><a href="https://www.linkedin.com/in/tomkoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg> <span class="username">tomkoker</span></a></li><li><a href="https://www.twitter.com/teddykoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">teddykoker</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Algorithmic Trading and Machine Learning.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

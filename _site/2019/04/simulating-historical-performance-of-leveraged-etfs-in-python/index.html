@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Simulating Historical Performance of Leveraged ETFs in Python | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Simulating Historical Performance of Leveraged ETFs in Python" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post we will look at the long term performance of leveraged ETFs, as well as simulate how they may have performed in time periods before their inception." />
+<meta property="og:description" content="In this post we will look at the long term performance of leveraged ETFs, as well as simulate how they may have performed in time periods before their inception." />
+<link rel="canonical" href="http://0.0.0.0:4000/2019/04/simulating-historical-performance-of-leveraged-etfs-in-python/" />
+<meta property="og:url" content="http://0.0.0.0:4000/2019/04/simulating-historical-performance-of-leveraged-etfs-in-python/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-04-21T00:00:00-04:00" />
+<meta name="twitter:card" content="summary" />
+<meta property="twitter:title" content="Simulating Historical Performance of Leveraged ETFs in Python" />
+<meta name="twitter:site" content="@teddykoker" />
+<script type="application/ld+json">
+{"description":"In this post we will look at the long term performance of leveraged ETFs, as well as simulate how they may have performed in time periods before their inception.","headline":"Simulating Historical Performance of Leveraged ETFs in Python","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/2019/04/simulating-historical-performance-of-leveraged-etfs-in-python/"},"@type":"BlogPosting","url":"http://0.0.0.0:4000/2019/04/simulating-historical-performance-of-leveraged-etfs-in-python/","dateModified":"2019-04-21T00:00:00-04:00","datePublished":"2019-04-21T00:00:00-04:00","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="Teddy Koker" /><link rel="shortcut icon" href="/favicon.png">
+
+  <link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css"
+  integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j"
+  crossorigin="anonymous"
+  />
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js"
+    integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ"
+    crossorigin="anonymous"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js"
+    integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+    crossorigin="anonymous"
+    onload='renderMathInElement(document.body,{delimiters: [{left: "$$", right: "$$", display: true},
+                                                            {left: "$", right: "$", display: false}]})'
+  ></script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Teddy Koker</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Simulating Historical Performance of Leveraged ETFs in Python</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-04-21T00:00:00-04:00" itemprop="datePublished">Apr 21, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>In this post we will look at the long term performance of leveraged ETFs, as well as simulate how they may have performed in time periods before their inception.</p>
+
+<p>Many people would recommend against holding a position in a leveraged ETF because of <a href="https://seekingalpha.com/article/1864191-what-you-need-to-know-about-the-decay-of-leveraged-etfs">beta slippage</a>. Lets take a look at the performance of SPY, an S&amp;P 500 ETF, versus UPRO, a 3x leveraged S&amp;P 500 ETF.</p>
+
+<p>First lets import a few libraries.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span> 
+<span class="kn">import</span> <span class="nn">pandas_datareader.data</span> <span class="k">as</span> <span class="n">web</span>
+<span class="kn">import</span> <span class="nn">datetime</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+</code></pre></div></div>
+
+<p>We’ll also write a few utility functions to help us out.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">returns</span><span class="p">(</span><span class="n">prices</span><span class="p">):</span>
+    <span class="s">"""
+    Calulates the growth of 1 dollar invested in a stock with given prices
+    """</span>
+    <span class="k">return</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">prices</span><span class="o">.</span><span class="n">pct_change</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span><span class="o">.</span><span class="n">cumprod</span><span class="p">()</span>
+
+<span class="k">def</span> <span class="nf">drawdown</span><span class="p">(</span><span class="n">prices</span><span class="p">):</span>
+    <span class="s">"""
+    Calulates the drawdown of a stock with given prices
+    """</span>
+    <span class="n">rets</span> <span class="o">=</span> <span class="n">returns</span><span class="p">(</span><span class="n">prices</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">rets</span><span class="o">.</span><span class="n">div</span><span class="p">(</span><span class="n">rets</span><span class="o">.</span><span class="n">cummax</span><span class="p">())</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+
+<span class="k">def</span> <span class="nf">cagr</span><span class="p">(</span><span class="n">prices</span><span class="p">):</span>
+    <span class="s">"""
+    Calculates the Compound Annual Growth Rate (CAGR) of a stock with given prices
+    """</span>
+    <span class="n">delta</span> <span class="o">=</span> <span class="p">(</span><span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">prices</span><span class="o">.</span><span class="n">index</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">days</span> <span class="o">/</span> <span class="mf">365.25</span>
+    <span class="k">return</span> <span class="p">((</span><span class="n">prices</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">/</span> <span class="n">prices</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="o">**</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">delta</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="mi">100</span>
+</code></pre></div></div>
+
+<p>Now lets graph the adjusted close of UPRO since its inception versus SPY.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2009</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="mi">23</span><span class="p">)</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2019</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+
+<span class="n">spy</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="s">"SPY"</span><span class="p">,</span> <span class="s">"yahoo"</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)[</span><span class="s">"Adj Close"</span><span class="p">]</span>
+<span class="n">upro</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="s">"UPRO"</span><span class="p">,</span> <span class="s">"yahoo"</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)[</span><span class="s">"Adj Close"</span><span class="p">]</span>
+
+<span class="n">spy_returns</span> <span class="o">=</span> <span class="n">returns</span><span class="p">(</span><span class="n">spy</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s">"SPY"</span><span class="p">)</span>
+<span class="n">upro_returns</span> <span class="o">=</span> <span class="n">returns</span><span class="p">(</span><span class="n">upro</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s">"UPRO"</span><span class="p">)</span>
+
+<span class="n">spy_returns</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s">"Growth of $1: SPY vs UPRO"</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">upro_returns</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">legend</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"CAGRs"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"SPY: {cagr(spy):.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"UPRO: {cagr(upro):.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>CAGRs
+SPY: 13.67%
+UPRO: 32.64%
+</code></pre></div></div>
+
+<p><img src="/images/2019-04-21-simulating-historical-performance-of-leveraged-etfs-in-python_7_1.png" alt="png" /></p>
+
+<p>As we can see, the 3x leveraged ETF does out perform its non-leveraged counterpart, but with a trade off of increased risk. Lets look at the drawdowns.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">spy_drawdown</span> <span class="o">=</span> <span class="n">drawdown</span><span class="p">(</span><span class="n">spy</span><span class="p">)</span>
+<span class="n">upro_drawdown</span> <span class="o">=</span> <span class="n">drawdown</span><span class="p">(</span><span class="n">upro</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="s">"Max Drawdown"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"SPY: {spy_drawdown.idxmin()} {spy_drawdown.min():.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"UPRO: {upro_drawdown.idxmin()} {upro_drawdown.min():.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+<span class="n">upro_drawdown</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">area</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s">"red"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s">"UPRO drawdown"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">));</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Max Drawdown
+SPY: 2018-12-24 00:00:00 -19.35%
+UPRO: 2011-10-03 00:00:00 -51.73%
+</code></pre></div></div>
+
+<p><img src="/images/2019-04-21-simulating-historical-performance-of-leveraged-etfs-in-python_9_1.png" alt="png" /></p>
+
+<p>An investor holding SPY during the above time period would have experienced a max drawdown of just under 20%, where an investor long UPRO would have had to endure losing over half their portfolio multiple times!</p>
+
+<h2 id="simulating-historical-performance">Simulating Historical Performance</h2>
+
+<p>Up until now we have seen that UPRO does indeed out perform SPY since its inception. However, UPRO has only ever seen a bull market, so it is not surprising that it has had decent annual growth. In order to simulate how UPRO would of done in the past, including the financial crisis, we can apply UPRO’s 3x leverage and expense ratio (0.92%) to VFINX, an S&amp;P 500 ETF that has been around since 1976.</p>
+
+<p>Lets write a helper function. Daily percent change is calculated by taking the daily percent change of the proxy, subtracting the daily expense ratio, then multiplying by the leverage.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">sim_leverage</span><span class="p">(</span><span class="n">proxy</span><span class="p">,</span> <span class="n">leverage</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">expense_ratio</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span> <span class="n">initial_value</span><span class="o">=</span><span class="mf">1.0</span><span class="p">):</span>
+    <span class="n">pct_change</span> <span class="o">=</span> <span class="n">proxy</span><span class="o">.</span><span class="n">pct_change</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+    <span class="n">pct_change</span> <span class="o">=</span> <span class="p">(</span><span class="n">pct_change</span> <span class="o">-</span> <span class="n">expense_ratio</span> <span class="o">/</span> <span class="mi">252</span><span class="p">)</span> <span class="o">*</span> <span class="n">leverage</span>
+    <span class="n">sim</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">pct_change</span><span class="p">)</span><span class="o">.</span><span class="n">cumprod</span><span class="p">()</span> <span class="o">*</span> <span class="n">initial_value</span>
+    <span class="n">sim</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">initial_value</span>
+    <span class="k">return</span> <span class="n">sim</span>
+</code></pre></div></div>
+
+<p>In order to test our simulation, lets compare a simulated UPRO to UPRO since its inception.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">vfinx</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="s">"VFINX"</span><span class="p">,</span> <span class="s">"yahoo"</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)[</span><span class="s">"Adj Close"</span><span class="p">]</span>
+<span class="n">upro_sim</span> <span class="o">=</span> <span class="n">sim_leverage</span><span class="p">(</span><span class="n">vfinx</span><span class="p">,</span> <span class="n">leverage</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">expense_ratio</span><span class="o">=</span><span class="mf">0.0092</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s">"UPRO Sim"</span><span class="p">)</span>
+<span class="n">upro_sim</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s">"Growth of $1: UPRO vs UPRO Sim"</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+<span class="n">upro_returns</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">legend</span><span class="o">=</span><span class="bp">True</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-04-21-simulating-historical-performance-of-leveraged-etfs-in-python_16_0.png" alt="png" /></p>
+
+<p>The lines are nearly identical! Lets now simulate the hypothetical performance of UPRO since the inception of VFINX.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">start</span> <span class="o">=</span> <span class="n">datetime</span><span class="o">.</span><span class="n">datetime</span><span class="p">(</span><span class="mi">1976</span><span class="p">,</span> <span class="mi">8</span><span class="p">,</span> <span class="mi">31</span><span class="p">)</span>
+<span class="n">vfinx</span> <span class="o">=</span> <span class="n">web</span><span class="o">.</span><span class="n">DataReader</span><span class="p">(</span><span class="s">"VFINX"</span><span class="p">,</span> <span class="s">"yahoo"</span><span class="p">,</span> <span class="n">start</span><span class="p">,</span> <span class="n">end</span><span class="p">)[</span><span class="s">"Adj Close"</span><span class="p">]</span>
+<span class="n">upro_sim</span> <span class="o">=</span> <span class="n">sim_leverage</span><span class="p">(</span><span class="n">vfinx</span><span class="p">,</span> <span class="n">leverage</span><span class="o">=</span><span class="mf">3.0</span><span class="p">,</span> <span class="n">expense_ratio</span><span class="o">=</span><span class="mf">0.0092</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s">"UPRO Sim"</span><span class="p">)</span>
+<span class="n">upro_sim</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="s">"Growth of $1: VFINX vs UPRO Sim"</span><span class="p">,</span> <span class="n">legend</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">))</span>
+
+<span class="n">vfinx_returns</span> <span class="o">=</span> <span class="n">returns</span><span class="p">(</span><span class="n">vfinx</span><span class="p">)</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="s">"VFINX"</span><span class="p">)</span>
+<span class="n">vfinx_returns</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">legend</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"CAGRs"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"VFINX: {cagr(vfinx):.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"UPRO Sim: {cagr(upro_sim):.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>CAGRs
+VFINX: 10.39%
+UPRO Sim: 18.76%
+</code></pre></div></div>
+
+<p><img src="/images/2019-04-21-simulating-historical-performance-of-leveraged-etfs-in-python_18_1.png" alt="png" /></p>
+
+<p>The UPRO Simulation still outperforms its non-leveraged counterpart, but lets look at the drawdowns.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">upro_sim_drawdown</span> <span class="o">=</span> <span class="n">drawdown</span><span class="p">(</span><span class="n">upro_sim</span><span class="p">)</span>
+<span class="n">vfinx_drawdown</span> <span class="o">=</span> <span class="n">drawdown</span><span class="p">(</span><span class="n">vfinx</span><span class="p">)</span>
+
+<span class="k">print</span><span class="p">(</span><span class="s">"Max Drawdown"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"VFINX: {vfinx_drawdown.idxmin()} {vfinx_drawdown.min():.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"UPRO Sim: {upro_sim_drawdown.idxmin()} {upro_sim_drawdown.min():.2f}</span><span class="si">%</span><span class="s">"</span><span class="p">)</span>
+<span class="n">upro_sim_drawdown</span><span class="o">.</span><span class="n">plot</span><span class="o">.</span><span class="n">area</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="s">"red"</span><span class="p">,</span> <span class="n">title</span><span class="o">=</span><span class="s">"UPRO Sim drawdown"</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">10</span><span class="p">,</span><span class="mi">6</span><span class="p">));</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Max Drawdown
+VFINX: 2009-03-09 00:00:00 -55.25%
+UPRO Sim: 2009-03-09 00:00:00 -97.11%
+</code></pre></div></div>
+
+<p><img src="/images/2019-04-21-simulating-historical-performance-of-leveraged-etfs-in-python_20_1.png" alt="png" /></p>
+
+<p>VFINX does have a fairly substantial drawdown of over 55%, but an investor holding the simulated UPRO would encounter many large drawdowns including one over 97% during the financial crisis in 2008!</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>The simulated UPRO had an average compound annual growth rate of 18.76% compared to the 10.39% of the S&amp;P 500. Although the returns are higher, the near 100% drawdowns make it an extremely risky investment to be held on its own. In the next post we will explore simulated historical performance of other leveraged ETFs and look at some multi-asset allocation strategies.</p>
+
+  </div><a class="u-url" href="/2019/04/simulating-historical-performance-of-leveraged-etfs-in-python/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Teddy Koker</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Teddy Koker</li><li><a class="u-email" href="mailto:teddy.koker@gmail.com">teddy.koker@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/teddykoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">teddykoker</span></a></li><li><a href="https://www.linkedin.com/in/tomkoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg> <span class="username">tomkoker</span></a></li><li><a href="https://www.twitter.com/teddykoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">teddykoker</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Algorithmic Trading and Machine Learning.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>

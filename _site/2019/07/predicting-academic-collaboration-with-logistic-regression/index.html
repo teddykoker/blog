@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Predicting Academic Collaboration with Logistic Regression | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.0" />
+<meta property="og:title" content="Predicting Academic Collaboration with Logistic Regression" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In my last post, we learned what Logistic Regression is, and how it can be used to classify flowers in the Iris Dataset. In this post we will see how Logistic Regression can be applied to social networks in order to predict future collaboration between researchers. As usual we’ll start by importing a few libraries:" />
+<meta property="og:description" content="In my last post, we learned what Logistic Regression is, and how it can be used to classify flowers in the Iris Dataset. In this post we will see how Logistic Regression can be applied to social networks in order to predict future collaboration between researchers. As usual we’ll start by importing a few libraries:" />
+<link rel="canonical" href="http://0.0.0.0:4000/2019/07/predicting-academic-collaboration-with-logistic-regression/" />
+<meta property="og:url" content="http://0.0.0.0:4000/2019/07/predicting-academic-collaboration-with-logistic-regression/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/2019-07-01-predicting-academic-collaboration-with-logistic-regression_14_1.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-07-01T00:00:00-04:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta property="twitter:image" content="https://teddykoker.com/images/2019-07-01-predicting-academic-collaboration-with-logistic-regression_14_1.png" />
+<meta property="twitter:title" content="Predicting Academic Collaboration with Logistic Regression" />
+<meta name="twitter:site" content="@teddykoker" />
+<script type="application/ld+json">
+{"description":"In my last post, we learned what Logistic Regression is, and how it can be used to classify flowers in the Iris Dataset. In this post we will see how Logistic Regression can be applied to social networks in order to predict future collaboration between researchers. As usual we’ll start by importing a few libraries:","headline":"Predicting Academic Collaboration with Logistic Regression","mainEntityOfPage":{"@type":"WebPage","@id":"http://0.0.0.0:4000/2019/07/predicting-academic-collaboration-with-logistic-regression/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/2019-07-01-predicting-academic-collaboration-with-logistic-regression_14_1.png","url":"http://0.0.0.0:4000/2019/07/predicting-academic-collaboration-with-logistic-regression/","dateModified":"2019-07-01T00:00:00-04:00","datePublished":"2019-07-01T00:00:00-04:00","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css"><link type="application/atom+xml" rel="alternate" href="http://0.0.0.0:4000/feed.xml" title="Teddy Koker" /><link rel="shortcut icon" href="/favicon.png">
+
+  <link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css"
+  integrity="sha384-yFRtMMDnQtDRO8rLpMIKrtPCD5jdktao2TV19YiZYWMDkUR5GQZR/NOVTdquEx1j"
+  crossorigin="anonymous"
+  />
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.js"
+    integrity="sha384-9Nhn55MVVN0/4OFx7EE5kpFBPsEMZxKTCnA+4fqDmg12eCTqGi6+BB2LjY8brQxJ"
+    crossorigin="anonymous"
+  ></script>
+  <script
+    defer
+    src="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/contrib/auto-render.min.js"
+    integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+    crossorigin="anonymous"
+    onload='renderMathInElement(document.body,{delimiters: [{left: "$$", right: "$$", display: true},
+                                                            {left: "$", right: "$", display: false}]})'
+  ></script>
+</head>
+<body><header class="site-header" role="banner">
+
+  <div class="wrapper"><a class="site-title" rel="author" href="/">Teddy Koker</a><nav class="site-nav">
+        <input type="checkbox" id="nav-trigger" class="nav-trigger" />
+        <label for="nav-trigger">
+          <span class="menu-icon">
+            <svg viewBox="0 0 18 15" width="18px" height="15px">
+              <path d="M18,1.484c0,0.82-0.665,1.484-1.484,1.484H1.484C0.665,2.969,0,2.304,0,1.484l0,0C0,0.665,0.665,0,1.484,0 h15.032C17.335,0,18,0.665,18,1.484L18,1.484z M18,7.516C18,8.335,17.335,9,16.516,9H1.484C0.665,9,0,8.335,0,7.516l0,0 c0-0.82,0.665-1.484,1.484-1.484h15.032C17.335,6.031,18,6.696,18,7.516L18,7.516z M18,13.516C18,14.335,17.335,15,16.516,15H1.484 C0.665,15,0,14.335,0,13.516l0,0c0-0.82,0.665-1.483,1.484-1.483h15.032C17.335,12.031,18,12.695,18,13.516L18,13.516z"/>
+            </svg>
+          </span>
+        </label>
+
+        <div class="trigger"><a class="page-link" href="/about/">About</a></div>
+      </nav></div>
+</header>
+<main class="page-content" aria-label="Content">
+      <div class="wrapper">
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+
+  <header class="post-header">
+    <h1 class="post-title p-name" itemprop="name headline">Predicting Academic Collaboration with Logistic Regression</h1>
+    <p class="post-meta">
+      <time class="dt-published" datetime="2019-07-01T00:00:00-04:00" itemprop="datePublished">Jul 1, 2019
+      </time></p>
+  </header>
+
+  <div class="post-content e-content" itemprop="articleBody">
+    <p>In my <a href="/2019/06/multi-class-classification-with-logistic-regression-in-python/">last post</a>, we learned what Logistic Regression is, and how it can be used to classify flowers in the Iris Dataset. In this post we will see how Logistic Regression can be applied to social networks in order to predict future collaboration between researchers. As usual we’ll start by importing a few libraries:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">networkx</span> <span class="k">as</span> <span class="n">nx</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">random</span><span class="p">,</span> <span class="n">itertools</span><span class="p">,</span> <span class="n">json</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s">"figure.figsize"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="c1"># (w, h)
+</span><span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s">"figure.dpi"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+</code></pre></div></div>
+
+<h2 id="data">Data</h2>
+
+<p>The <a href="https://www.microsoft.com/en-us/research/project/microsoft-academic-graph/">Microsoft Academic Graph</a> (MAG) is a dataset of over 200 million papers. The dataset contains papers from thousands of conferences, journals, and institutions. The <a href="https://www.openacademic.ai/">Open Academic Society</a> provides regular snapshots of the dataset on their website. For the purpose of this post, I will be using the first one million papers found in <a href="https://academicgraphv2.blob.core.windows.net/oag/mag/paper/mag_papers_0.zip"><code class="highlighter-rouge">mag_papers_0.zip</code></a>. Let’s take a look at the data:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df</span> <span class="o">=</span> <span class="nb">next</span><span class="p">(</span><span class="n">pd</span><span class="o">.</span><span class="n">read_json</span><span class="p">(</span><span class="s">'mag_papers_0.txt'</span><span class="p">,</span> <span class="n">lines</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">chunksize</span><span class="o">=</span><span class="mi">1_000_000</span><span class="p">))</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">dropna</span><span class="p">(</span><span class="n">subset</span><span class="o">=</span><span class="p">[</span><span class="s">'year'</span><span class="p">,</span> <span class="s">'authors'</span><span class="p">])</span>
+<span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="n">n</span><span class="o">=</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>0</th>
+      <th>1</th>
+      <th>2</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>authors</th>
+      <td>[{'name': 'Ronald P. Mason', 'id': '2105522006...</td>
+      <td>[{'name': '侯晓亮', 'id': '2400277081'}]</td>
+      <td>[{'name': '张冬梅', 'id': '2405201566'}]</td>
+    </tr>
+    <tr>
+      <th>doc_type</th>
+      <td>Journal</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>doi</th>
+      <td>10.1007/978-1-4684-5568-7_3</td>
+      <td>NaN</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>id</th>
+      <td>100000002</td>
+      <td>1000000047</td>
+      <td>1000000056</td>
+    </tr>
+    <tr>
+      <th>issue</th>
+      <td></td>
+      <td>6</td>
+      <td>5</td>
+    </tr>
+    <tr>
+      <th>n_citation</th>
+      <td>7</td>
+      <td>0</td>
+      <td>0</td>
+    </tr>
+    <tr>
+      <th>page_end</th>
+      <td>27</td>
+      <td>143</td>
+      <td>46</td>
+    </tr>
+    <tr>
+      <th>page_start</th>
+      <td>21</td>
+      <td>143</td>
+      <td>46</td>
+    </tr>
+    <tr>
+      <th>publisher</th>
+      <td>Springer, Boston, MA</td>
+      <td></td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>title</th>
+      <td>Electron Spin Resonance Investigations of Oxyg...</td>
+      <td>建筑物地基沉降的灰色模型GM（1，1）预测法</td>
+      <td>“民情日记”消除干群“空心层”</td>
+    </tr>
+    <tr>
+      <th>venue</th>
+      <td>{'raw': 'Basic life sciences', 'id': '27556866...</td>
+      <td>{'raw': '安徽建筑'}</td>
+      <td>{'raw': '兵团工运'}</td>
+    </tr>
+    <tr>
+      <th>volume</th>
+      <td>49</td>
+      <td>13</td>
+      <td></td>
+    </tr>
+    <tr>
+      <th>year</th>
+      <td>1988</td>
+      <td>2006</td>
+      <td>2010</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>We can see that, in addition to a bunch of other data, each paper has a list of <code class="highlighter-rouge">authors</code>, each with a unique id, and a <code class="highlighter-rouge">year</code> that the paper was published. Let’s take a look at the histogram of years in our data:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plt</span><span class="o">.</span><span class="n">hist</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">df</span><span class="p">[</span><span class="s">'year'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1960</span><span class="p">][</span><span class="s">'year'</span><span class="p">],</span> <span class="n">bins</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'Year'</span><span class="p">);</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'Count'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-07-01-predicting-academic-collaboration-with-logistic-regression_7_0.png" alt="png" /></p>
+
+<p>In order to create our model, we are going to form network graphs from the above data. Each <code class="highlighter-rouge">author</code> <code class="highlighter-rouge">id</code> will have its own node, and will share edges with any other author they have co-authored a paper with. We will split the data into three consecutive time frames: $T_0$, $T_1$ and $T_2$. The reason for splitting the data into time frames is so we can train a model to predict if any two authors that have not worked together in $T_n$ will become co-authors in $T _{n+1}$, using only information from $T_n$. Co-author pairs formed from $T_0$ to $T_1$ will be used to train the model, and co-author pairs formed from $T_1$ to $T_2$ will be used as the out-of-sample test set. As many of the papers in the data set have been published between 2000 and 2015, we will use $[2000, 2005)$, $[2005, 2010)$, and $[2010, 2015)$ as $T_0$, $T_1$ and $T_2$, respectively:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">time_ranges</span> <span class="o">=</span> <span class="p">[(</span><span class="mi">2000</span><span class="p">,</span> <span class="mi">2005</span><span class="p">),</span> <span class="p">(</span><span class="mi">2005</span><span class="p">,</span> <span class="mi">2010</span><span class="p">),</span> <span class="p">(</span><span class="mi">2010</span><span class="p">,</span> <span class="mi">2015</span><span class="p">)]</span>
+</code></pre></div></div>
+
+<p>We’ll write a function to generate the network graphs from our data frame and time ranges:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">data_to_graphs</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">time_ranges</span><span class="p">):</span>
+    <span class="n">graphs</span> <span class="o">=</span> <span class="p">[</span><span class="n">nx</span><span class="o">.</span><span class="n">Graph</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">time_ranges</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">itertuples</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">t</span><span class="p">,</span> <span class="n">time_range</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">time_ranges</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">row</span><span class="o">.</span><span class="n">year</span> <span class="o">&gt;=</span> <span class="n">time_range</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="ow">and</span> <span class="n">row</span><span class="o">.</span><span class="n">year</span> <span class="o">&lt;</span> <span class="n">time_range</span><span class="p">[</span><span class="mi">1</span><span class="p">]:</span>
+                <span class="n">ids</span> <span class="o">=</span> <span class="p">[</span><span class="n">a</span><span class="p">[</span><span class="s">'id'</span><span class="p">]</span> <span class="k">for</span> <span class="n">a</span> <span class="ow">in</span> <span class="n">row</span><span class="o">.</span><span class="n">authors</span><span class="p">]</span>
+                <span class="n">graphs</span><span class="p">[</span><span class="n">t</span><span class="p">]</span><span class="o">.</span><span class="n">add_edges_from</span><span class="p">(</span><span class="n">itertools</span><span class="o">.</span><span class="n">combinations</span><span class="p">(</span><span class="n">ids</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">graphs</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">graphs</span> <span class="o">=</span> <span class="n">data_to_graphs</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">time_ranges</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Just to take a look at what we have so far, we can draw the largest subcomponent of the first graph like so:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">gc</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">connected_component_subgraphs</span><span class="p">(</span><span class="n">graphs</span><span class="p">[</span><span class="mi">0</span><span class="p">]),</span> <span class="n">key</span><span class="o">=</span><span class="nb">len</span><span class="p">)</span>
+<span class="n">nx</span><span class="o">.</span><span class="n">draw_spring</span><span class="p">(</span><span class="n">gc</span><span class="p">,</span> <span class="n">node_size</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">,</span> <span class="n">node_color</span><span class="o">=</span><span class="s">'b'</span><span class="p">,</span> <span class="n">edge_color</span><span class="o">=</span><span class="s">'grey'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">"MAG 2000-2004 Largest Subgraph"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/usr/local/anaconda3/lib/python3.7/site-packages/networkx/drawing/nx_pylab.py:611: MatplotlibDeprecationWarning: isinstance(..., numbers.Number)
+  if cb.is_numlike(alpha):
+</code></pre></div></div>
+
+<p><img src="/images/2019-07-01-predicting-academic-collaboration-with-logistic-regression_14_1.png" alt="png" /></p>
+
+<p>It is easy to see the clusters formed by large groups of authors that have worked together. We can also see more distant nodes that only have very few connections.</p>
+
+<h2 id="labeling">Labeling</h2>
+
+<p>Now that we have our network graphs, we can start creating our training and test sets. Each row in the sets will represent a pair of nodes that have not collaborated. The row will be assigned a positive label if the pair ends up collaborating in the next time period, and a negative label if they don’t. Intuitively, there will be a much greater number of pairs with negative labels than positive, so we will randomly select a smaller subset of negative labels (equal to the number of positive labels found). We’ll write two functions that help us extract positively and negatively labeled pairs:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">positive_pairs</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">next_graph</span><span class="p">):</span>
+    <span class="n">pairs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">next_graph</span><span class="o">.</span><span class="n">edges</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">graph</span><span class="o">.</span><span class="n">has_node</span><span class="p">(</span><span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="ow">and</span> <span class="n">graph</span><span class="o">.</span><span class="n">has_node</span><span class="p">(</span><span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">graph</span><span class="o">.</span><span class="n">has_edge</span><span class="p">(</span><span class="o">*</span><span class="n">pair</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">pairs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pairs</span>
+
+<span class="k">def</span> <span class="nf">negative_pairs</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">next_graph</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="n">pairs</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+    <span class="k">while</span> <span class="nb">len</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span> <span class="o">&lt;</span> <span class="n">n</span><span class="p">:</span>
+        <span class="n">pair</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">random</span><span class="o">.</span><span class="n">sample</span><span class="p">(</span><span class="n">graph</span><span class="o">.</span><span class="n">nodes</span><span class="p">,</span> <span class="mi">2</span><span class="p">))</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">graph</span><span class="o">.</span><span class="n">has_edge</span><span class="p">(</span><span class="o">*</span><span class="n">pair</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="ow">not</span> <span class="n">next_graph</span><span class="o">.</span><span class="n">has_edge</span><span class="p">(</span><span class="o">*</span><span class="n">pair</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="n">pairs</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pair</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">pairs</span>
+</code></pre></div></div>
+
+<h2 id="features">Features</h2>
+
+<p>Now that we know how our training and test sets will be labeled, we have to decide what other features we want each row of the sets to contain; that is, what indicators may we add that could help our model predict future collaboration? We will pick a few algorithms commonly used in social network analysis:</p>
+
+<h3 id="common-neighbors">Common Neighbors</h3>
+
+<p>Our first feature will simply be the number of neighbors that a given pair of nodes share. This can be represented mathematically like so:</p>
+
+<div class="kdmath">$$
+| N(u) \cap N(v) |
+$$</div>
+
+<p>Where $u$ and $v$ are both nodes, and $N(v)$ denotes the set the of all neighbors of node $v$. Common Neighbors was chosen as a feature under the assumption that two authors that share a large number of co-authors may have a higher chance of working together in the future.</p>
+
+<h3 id="jaccard-coefficient">Jaccard Coefficient</h3>
+
+<p>The <a href="https://en.wikipedia.org/wiki/Jaccard_index">Jaccard Coefficient</a> measures similarity between two sets by dividing the size of the intersection by the size of the union. We will compute the Jaccard Coefficient of the neighbors of the two authors like so:</p>
+
+<div class="kdmath">$$
+{| N(u) \cap N(v) |}  \over {| N(u) \cup N(v) | }
+$$</div>
+
+<p>Two nodes that have a high Jaccard Coefficient have very similar neighbors, which might be a good indication for future collaboration.</p>
+
+<h3 id="resource-allocation-algorithm">Resource Allocation Algorithm</h3>
+
+<p>Introduced in 2009 by Tao Zhou, Linyuan Lu, and Yi-Cheng Zhang in <a href="https://arxiv.org/pdf/0901.0553.pdf">Predicting Missing Links via Local Information</a>, the Resource Allocation algorithm is defined as:</p>
+
+<div class="kdmath">$$
+\sum_{w \in N(u) \cap N(v)} {1 \over |N(w)|}
+$$</div>
+
+<p>The idea behind the resource allocation algorithm is that if many of the common neighbors between $u$ and $v$ have a low number of neighbors themselves, any “resources” sent from $u$ have a high likelihood of making their way to $v$ and vice versa.</p>
+
+<h3 id="preferential-attachment">Preferential Attachment</h3>
+
+<p>Preferential Attachment is simply the product of the size of each node’s neighbor set:</p>
+
+<div class="kdmath">$$
+|N(u)||N(v)|
+$$</div>
+
+<p>Two nodes that both have high numbers of neighbors, regardless of their commonality, may have a greater chance of collaboration in the future.</p>
+
+<h2 id="generating-features">Generating Features</h2>
+
+<p>Since the library we are using for network graph computation, <a href="https://networkx.github.io/">NetworkX</a>, has all of the above functions built in, we can generate all of our features for a given pair like so:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">generate_features</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">pair</span><span class="p">,</span> <span class="n">label</span><span class="p">):</span>
+    <span class="k">return</span> <span class="p">{</span>
+        <span class="s">"common_neighbors"</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">common_neighbors</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">pair</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">pair</span><span class="p">[</span><span class="mi">1</span><span class="p">]))),</span>
+        <span class="s">"jaccard_coefficient"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">jaccard_coefficient</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="p">[</span><span class="n">pair</span><span class="p">]))[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+        <span class="s">"resource_allocation"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">resource_allocation_index</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="p">[</span><span class="n">pair</span><span class="p">]))[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+        <span class="s">"preferential_attachment"</span><span class="p">:</span> <span class="nb">list</span><span class="p">(</span><span class="n">nx</span><span class="o">.</span><span class="n">preferential_attachment</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="p">[</span><span class="n">pair</span><span class="p">]))[</span><span class="mi">0</span><span class="p">][</span><span class="mi">2</span><span class="p">],</span>
+        <span class="s">"label"</span><span class="p">:</span> <span class="n">label</span><span class="p">,</span>
+    <span class="p">}</span>
+</code></pre></div></div>
+
+<p>Now we have everything we need to create our training and test sets:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">generate_set</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">next_graph</span><span class="p">):</span>
+    <span class="n">positives</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">generate_features</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">pair</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">positive_pairs</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">next_graph</span><span class="p">)</span>
+    <span class="p">]</span>
+    <span class="n">negatives</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">generate_features</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">pair</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">pair</span> <span class="ow">in</span> <span class="n">negative_pairs</span><span class="p">(</span><span class="n">graph</span><span class="p">,</span> <span class="n">next_graph</span><span class="p">,</span> <span class="nb">len</span><span class="p">(</span><span class="n">positives</span><span class="p">))</span>
+    <span class="p">]</span>
+    <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">positives</span> <span class="o">+</span> <span class="n">negatives</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df_train</span> <span class="o">=</span> <span class="n">generate_set</span><span class="p">(</span><span class="n">graphs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">graphs</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+<span class="n">df_test</span> <span class="o">=</span> <span class="n">generate_set</span><span class="p">(</span><span class="n">graphs</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">graphs</span><span class="p">[</span><span class="mi">2</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>Let’s look at the training set:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df_train</span><span class="o">.</span><span class="n">head</span><span class="p">(</span><span class="mi">5</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div>
+<style scoped="">
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>common_neighbors</th>
+      <th>jaccard_coefficient</th>
+      <th>label</th>
+      <th>preferential_attachment</th>
+      <th>resource_allocation</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>18</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>2</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>3456</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>11322</td>
+      <td>0.0</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0</td>
+      <td>0.0</td>
+      <td>1</td>
+      <td>63</td>
+      <td>0.0</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+<p>We can see that, as expected, each row has a label, and all of the features we wanted. Now we’re ready to train!</p>
+
+<h2 id="logistic-regression-model">Logistic Regression Model</h2>
+
+<p>We’ll start by splitting our datasets into inputs and labels:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span> <span class="o">=</span> <span class="n">df_train</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s">"label"</span><span class="p">]),</span> <span class="n">df_train</span><span class="p">[</span><span class="s">"label"</span><span class="p">]</span>
+<span class="n">X_test</span><span class="p">,</span> <span class="n">y_test</span> <span class="o">=</span> <span class="n">df_test</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">[</span><span class="s">"label"</span><span class="p">]),</span> <span class="n">df_test</span><span class="p">[</span><span class="s">"label"</span><span class="p">]</span>
+</code></pre></div></div>
+
+<p>Just like in the last post, we’ll have to normalize the data so it works well with logistic regression:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">mean</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">.</span><span class="n">mean</span><span class="p">()</span>
+<span class="n">std</span> <span class="o">=</span> <span class="n">X_train</span><span class="o">.</span><span class="n">std</span><span class="p">()</span>
+
+<span class="n">X_train</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_train</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+<span class="n">X_test</span> <span class="o">=</span> <span class="p">(</span><span class="n">X_test</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+</code></pre></div></div>
+
+<p>Now we could use the logistic regression code I wrote in my <a href="/2019/06/multi-class-classification-with-logistic-regression-in-python/">last post</a>, but the <a href="https://scikit-learn.org/stable/">scikit-learn</a> library has an implementation that is slightly more efficient, which will be much faster on our large dataset. Here is how we can use it to fit a model to our training data:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LogisticRegression</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">LogisticRegression</span><span class="p">(</span><span class="n">solver</span><span class="o">=</span><span class="s">'lbfgs'</span><span class="p">)</span>
+<span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X_train</span><span class="p">,</span> <span class="n">y_train</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p>Now that we have the model fit, we can check the mean accuracy with our test set:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">print</span><span class="p">(</span><span class="n">f</span><span class="s">"Test Accuracy: {model.score(X_test, y_test):.4f}"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Test Accuracy: 0.9365
+</code></pre></div></div>
+
+<h2 id="area-under-the-curve">Area Under the Curve</h2>
+
+<p>Although the model seems to have an almost 94% accuracy in the test set, accuracy is not best metric to use. Both our training and test sets are balanced with an equal number of negative and positive samples, which means that a model predicting positive every time would still have an accuracy of 50%. A better measure of performance of a classification model is known as Area Under the Receiver Operating Characteristics, or AUROC.</p>
+
+<h3 id="receiver-operating-characteristics">Receiver Operating Characteristics</h3>
+
+<p>The <a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic">Receiver Operating Characteristics</a> (ROC) curve is measure of a binary classifier’s ability to distinguish classes. The ROC curve drawn by plotting the True Positive Rate (TPR) against the False Positive Rate (FPR), each defined below, at different thresholds.</p>
+
+<div class="kdmath">$$
+TPR = {TP \over TP + FN}
+$$</div>
+
+<div class="kdmath">$$
+FPR = { TN \over TN + FP }
+$$</div>
+
+<p>Where $TP$, $FN$, $TN$, $FP$ are the number of True Positives, False Negatives, True Negatives, and False Positives respectively.</p>
+
+<p>Measuring the area under the ROC curve gives an indicator of how well the model can separating positive and negative classifications. An Area Under the Curve (AUC) of 1 means the model can correctly predict the classification every time, while an AUC of 0.5 means the model cannot at all distinguish between positive and negative classes. For more on the AUROC curve, be sure to check out this excellent <a href="https://towardsdatascience.com/understanding-auc-roc-curve-68b2303cc9c5">blog post</a>.</p>
+
+<p>We can plot our ROC curve using scikit-learn like so:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">roc_curve</span><span class="p">,</span> <span class="n">auc</span>
+<span class="n">y_score</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">decision_function</span><span class="p">(</span><span class="n">X_test</span><span class="p">)</span>
+<span class="n">fpr</span><span class="p">,</span> <span class="n">tpr</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">roc_curve</span><span class="p">(</span><span class="n">y_test</span><span class="p">,</span> <span class="n">y_score</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">'--'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fpr</span><span class="p">,</span> <span class="n">tpr</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">f</span><span class="s">"ROC curve (area = {auc(fpr, tpr):.3f})"</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'False Positive Rate'</span><span class="p">);</span> <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'True Positive Rate'</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span><span class="s">'Receiver Operating Characteristics'</span><span class="p">);</span> <span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-07-01-predicting-academic-collaboration-with-logistic-regression_64_0.png" alt="png" /></p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>By using our trained model on data collected from 2005 to 2009, we were able to predict whether a pair of authors would become co-authors in 2010 to 2014 with an AUC of 0.98! A model like this could be used as an application to suggest researchers to work with in the future. In addition, similar techniques could be used across different social networks to suggest friends on Facebook, or connections on LinkedIn, etc.</p>
+
+<p>There are also a number of ways the above model could be improved. All of the
+features currently being used are based off of neighbors of nodes formed by
+co-authorship. More features could be added relating to common paper topics or
+institutions. In addition, the logistic regression model could be replaced with
+<a href="https://en.wikipedia.org/wiki/Support-vector_machine">support-vector machines</a>,
+or a neural network to improve accuracy.</p>
+
+<p>If you liked this article, be sure to follow
+<a href="https://twitter.com/teddykoker">@teddykoker</a>, and check out my <a href="/">other
+articles</a>.</p>
+
+  </div><a class="u-url" href="/2019/07/predicting-academic-collaboration-with-logistic-regression/" hidden></a>
+</article>
+
+      </div>
+    </main><footer class="site-footer h-card">
+  <data class="u-url" href="/"></data>
+
+  <div class="wrapper">
+
+    <h2 class="footer-heading">Teddy Koker</h2>
+
+    <div class="footer-col-wrapper">
+      <div class="footer-col footer-col-1">
+        <ul class="contact-list">
+          <li class="p-name">Teddy Koker</li><li><a class="u-email" href="mailto:teddy.koker@gmail.com">teddy.koker@gmail.com</a></li></ul>
+      </div>
+
+      <div class="footer-col footer-col-2"><ul class="social-media-list"><li><a href="https://github.com/teddykoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#github"></use></svg> <span class="username">teddykoker</span></a></li><li><a href="https://www.linkedin.com/in/tomkoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#linkedin"></use></svg> <span class="username">tomkoker</span></a></li><li><a href="https://www.twitter.com/teddykoker"><svg class="svg-icon"><use xlink:href="/assets/minima-social-icons.svg#twitter"></use></svg> <span class="username">teddykoker</span></a></li></ul>
+</div>
+
+      <div class="footer-col footer-col-3">
+        <p>Algorithmic Trading and Machine Learning.</p>
+      </div>
+    </div>
+
+  </div>
+
+</footer>
+</body>
+
+</html>
