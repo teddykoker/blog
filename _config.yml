@@ -24,8 +24,8 @@ description: >- # this means to ignore newlines until "baseurl:"
 baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://teddykoker.com" # the base hostname & protocol for your site, e.g. http://example.com
 twitter_username: teddykoker
-github_username:  teddykoker
-linkedin_username: tomkoker
+github_username: teddykoker
+linkedin_username: teddykoker
 
 show_excerpts: true
 
@@ -40,7 +40,6 @@ permalink: /:categories/:year/:month/:title/
 
 kramdown:
   math_engine: False
-
 
 # Build settings
 theme: minima
