@@ -4,3 +4,11 @@
 
 @import "minima";
 
+// add horizontal scrolling to overflowing elements
+div.post-content div:not(.highlight) {
+    overflow-x: auto;
+    margin-bottom: 1rem;
+}
+table {
+  margin: 0;
+}
