@@ -3,7 +3,7 @@ layout: post
 title: "NLP from Scratch: Annotated Attention"
 image: "https://teddykoker.com/images/2020-02-25-nlp-from-scratch-annotated-attention_34_0.png"
 ---
-This post is the first in a series of articles about [natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing) (NLP), a subfield of machine learning concerning interaction between computers and human language. This article will be focused on *attention*, a mechanism that forms the backbone of many state-of-the art language models, including Google's BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)), and OpenAI's GPT-2 ([Radford et al., 2019](https://openai.com/blog/better-language-models/)). 
+This post is the first in a series of articles about [natural language processing](https://en.wikipedia.org/wiki/Natural_language_processing) (NLP), a subfield of machine learning concerning the interaction between computers and human language. This article will be focused on *attention*, a mechanism that forms the backbone of many state-of-the art language models, including Google's BERT ([Devlin et al., 2018](https://arxiv.org/abs/1810.04805)), and OpenAI's GPT-2 ([Radford et al., 2019](https://openai.com/blog/better-language-models/)). 
 
 [![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/teddykoker/blog/blob/master/_notebooks/2020-02-25-nlp-from-scratch-annotated-attention.ipynb)
 
@@ -11,7 +11,7 @@ First introduced in the paper *Neural Machine Translation by Jointly Learning to
 
 The next two sections of this post will consist of portions of the paper *Effective Approaches to Attention-based Neural Machine Translation* ([Luong et al., 2015](https://arxiv.org/abs/1508.04025)) along with my own comments and code in blockquotes.
 
-> Before continuing, it is important to have an understanding of LSTM netoworks. [Here](https://colah.github.io/posts/2015-08-Understanding-LSTMs/) is a great resource. The format of this post was inspired [The Annotated Transformer](https://nlp.seas.harvard.edu/2018/04/03/attention.html).
+> Before continuing, it is important to have an understanding of LSTM networks. [Here](https://colah.github.io/posts/2015-08-Understanding-LSTMs/) is a great resource. The format of this post was inspired by [The Annotated Transformer](https://nlp.seas.harvard.edu/2018/04/03/attention.html).
 
 
 ```python
@@ -38,7 +38,7 @@ types in Figure 2 and 3 respectively.
     
 Common to these two types of models is the fact
 that at each time step $t$ in the decoding phase, both
-approaches first take as input the hidden state ht
+approaches first take as input the hidden state $h_t$
 at the top layer of a stacking LSTM. The goal is
 then to derive a context vector $c_t$
 that captures relevant source-side information to help predict the
@@ -225,7 +225,7 @@ class Model(nn.Module):
 
 ## Experiments
 
-The original paper trained and evaluated on the [WMT14](http://www.statmt.org/wmt14/translation-task.html) German-English translation task, with a training set of 4.5 million sentence pairs. Since their implementation took "7 - 10 days to completely train a model," we will opt for a much smalling training/evaluation dataset: Multi30K ([Elliott et al., 2016](https://arxiv.org/abs/1605.00459)). This dataset consists of 30 thousand English-German sentence pairs, and we will be able to train the model on a single GPU in less than 31 minutes.
+The original paper trained and evaluated on the [WMT14](http://www.statmt.org/wmt14/translation-task.html) German-English translation task, with a training set of 4.5 million sentence pairs. Since their implementation took "7 - 10 days to completely train a model," we will opt for a much smaller training/evaluation dataset: Multi30K ([Elliott et al., 2016](https://arxiv.org/abs/1605.00459)). This dataset consists of 30 thousand English-German sentence pairs, and we will be able to train the model on a single GPU in less than 31 minutes.
 
 
 ```python
@@ -345,7 +345,7 @@ print(f"Test perplexity: {np.exp(test_loss):.2f}")
     Test perplexity: 13.84
 
 
-Our model achieves a perplexity of 13.84. This is worse then the paper's best perplexity of 5.9, but there is no way to directly compare as we are using a different dataset. There are a few ways we could improve the model to better match the papers results:
+Our model achieves a perplexity of 13.84. This is worse then the paper's best perplexity of 5.9, but there is no way to directly compare as we are using a different dataset. There are a few ways we could improve the model to better match the paper's results:
 
 1. Use bidirectional LSTM models; The model should be able to better "understand" the context of each word by looking at words both before and after each word.
 
