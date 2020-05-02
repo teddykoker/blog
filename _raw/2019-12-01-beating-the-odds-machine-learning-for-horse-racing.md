@@ -1,7 +1,7 @@
 ---
 layout: post
 title: "Beating the Odds: Machine Learning for Horse Racing"
-image: /images/betting.png
+image: "https://teddykoker.com/images/betting.png"
 
 ---
 
