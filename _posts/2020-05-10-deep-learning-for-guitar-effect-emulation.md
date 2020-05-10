@@ -1,7 +1,7 @@
 ---
 bibliography: 'bib.bib'
 csl: 'footnotes.csl'
-image: 'https://teddykoker.com/images/signal\_chain.png'
+image: 'https://teddykoker.com/images/signal_chain.png'
 layout: post
 title: Deep Learning for Guitar Effect Emulation
 ---
