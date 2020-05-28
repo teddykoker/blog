@@ -79,14 +79,19 @@ We can compute this derivative in our `gradient` function:
 ```python
 def gradient(x, theta, delta):
     Ft = positions(x, theta)
-    rets = returns(Ft, x, delta)
+    R = returns(Ft, x, delta)
     T = len(x)
     M = len(theta) - 2
     
-    A = np.mean(rets)
-    B = np.mean(np.square(rets))
+    A = np.mean(R)
+    B = np.mean(np.square(R))
     S = A / np.sqrt(B - A ** 2)
 
+    dSdA = S * (1 + S ** 2) / A
+    dSdB = -S ** 3 / 2 / A ** 2
+    dAdR = 1. / T
+    dBdR = 2. / T * R
+    
     grad = np.zeros(M + 2)  # initialize gradient
     dFpdtheta = np.zeros(M + 2)  # for storing previous dFdtheta
     
@@ -95,7 +100,7 @@ def gradient(x, theta, delta):
         dRdF = -delta * np.sign(Ft[t] - Ft[t-1])
         dRdFp = x[t] + delta * np.sign(Ft[t] - Ft[t-1])
         dFdtheta = (1 - Ft[t] ** 2) * (xt + theta[-1] * dFpdtheta)
-        dSdtheta = (dRdF * dFdtheta + dRdFp * dFpdtheta)
+        dSdtheta = (dSdA * dAdR + dSdB * dBdR[t]) * (dRdF * dFdtheta + dRdFp * dFpdtheta)
         grad = grad + dSdtheta
         dFpdtheta = dFdtheta
 
@@ -109,8 +114,8 @@ Now that we have our gradient function, we can optimize our parameters using gra
 
 
 ```python
-def train(x, epochs=500, M=5, commission=0.0025, learning_rate = 0.1):
-    theta = np.ones(M + 2)
+def train(x, epochs=2000, M=8, commission=0.0025, learning_rate = 0.3):
+    theta = np.random.rand(M + 2)
     sharpes = np.zeros(epochs) # store sharpes over time
     for i in range(epochs):
         grad, sharpe = gradient(x, theta, commission)
@@ -158,11 +163,12 @@ x_train = (x_train - mean) / std
 x_test = (x_test - mean) / std
 ```
 
-Now we're ready to train! We'll give the model a look-back window of 5.
+Now we're ready to train! We'll give the model a look-back window of 8 ticks.
 
 
 ```python
-theta, sharpes = train(x_train, epochs=500, M=5, commission=0.0025, learning_rate=.01)
+np.random.seed(0)
+theta, sharpes = train(x_train, epochs=2000, M=8, commission=0.0025, learning_rate=0.3)
 ```
 
     finished training
