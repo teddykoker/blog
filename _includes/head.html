@@ -10,7 +10,7 @@
   {%- endif -%}
 
   <link rel="shortcut icon" href="/favicon.png">
-
+<!--
   <link
   rel="stylesheet"
   href="https://cdn.jsdelivr.net/npm/katex@0.10.2/dist/katex.min.css"
@@ -31,4 +31,15 @@
     onload='renderMathInElement(document.body,{delimiters: [{left: "$$", right: "$$", display: true},
                                                             {left: "$", right: "$", display: false}]})'
   ></script>
+  -->
+  <script type="text/x-mathjax-config">
+  MathJax.Hub.Config({
+    tex2jax: {
+      inlineMath: [ ['$','$'], ["\\(","\\)"] ],
+      processEscapes: true
+    }
+  });
+  </script>
+  <script type="text/javascript" src="http://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+
 </head>
