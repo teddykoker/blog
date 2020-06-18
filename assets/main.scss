@@ -7,14 +7,9 @@
 // add horizontal scrolling to overflowing elements
 div.post-content div:not(.highlight) {
      overflow-x: auto;
-     overflow-y: hidden;
      margin-bottom: 1rem;
 }
-mjx-container {
-     overflow-x: auto;
-     overflow-y: hidden;
-     margin-bottom: 1rem;
-}
+
 table {
   margin: 0;
 }
