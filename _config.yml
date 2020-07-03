@@ -38,6 +38,10 @@ google_analytics: UA-138897125-1
 
 permalink: /:categories/:year/:month/:title/
 
+# for brave verification
+include: [".well-known"]
+
+
 # GitHub pages doesn't support this, default to using
 # MathJax instead of Katex :/
 # kramdown:
