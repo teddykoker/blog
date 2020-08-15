@@ -221,9 +221,19 @@ plt.title("RL Model vs. Buy and Hold - Test Data");
 ![png]({{ BASE_PATH }}/images/2019-06-04-trading-with-reinforcement-learning-in-python-part-ii-application_40_0.png) 
 
 
-Once again the model outperforms the asset! This model may be able to be improved by engineering more features (inputs), but it is a great start. For more reading on reinforcement learning in stock trading, be sure to check out these papers:
+Once again the model outperforms the asset! This model may be able to be improved by engineering more features (inputs), but it is a great start. If you found this post useful, be sure to cite my paper, [Cryptocurrency Trading Using Machine Learning](https://www.mdpi.com/1911-8074/13/8/178):
 
-* [Reinforcement Learning for Trading](http://papers.nips.cc/paper/1551-reinforcement-learning-for-trading.pdf)
-* [Stock Trading with Recurrent Reinforcement Learning](http://cs229.stanford.edu/proj2006/Molina-StockTradingWithRecurrentReinforcementLearning.pdf)
+```
+@article{koker2020cryptocurrency,
+  title={Cryptocurrency Trading Using Machine Learning},
+  author={Koker, Thomas E and Koutmos, Dimitrios},
+  journal={Journal of Risk and Financial Management},
+  volume={13},
+  number={8},
+  pages={178},
+  year={2020},
+  publisher={Multidisciplinary Digital Publishing Institute}
+}
+```
 
 As always, the notebook for this post is available on my [Github](https://github.com/teddykoker/blog/tree/master/_notebooks).
