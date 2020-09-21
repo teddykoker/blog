@@ -114,33 +114,16 @@ resnet = models.resnet50(pretrained=True)
 
 Now we have a model that can accurately classify images of 1000 different objects, including everything from cats, to pencils, to airplanes. How does this help us with histopathologic tissue images? In the process of learning to distinguish between the different objects in ImageNet, the middle layers of the network learn to identify different features, such as lines, curves, and other patterns that help it make a prediction in the last layer. We can use these same features on our own dataset simply by replacing the last layer with a few layers of our own. This technique is known as *transfer learning*.
 
-We'll be extending our ResNet with few layers outlined in the [fast.ai](https://course.fast.ai/part2) Deep Learning from the Foundations Course. If you are more interested in the inner workings of this model, I recommend you check it out!
-
 
 ```python
 from torch import nn
-
-# https://docs.fast.ai/layers.html#AdaptiveConcatPool2d
-class AdaptiveConcatPool2d(nn.Module):
-    def __init__(self, size=1):
-        super().__init__()
-        self.output_size = size
-        self.ap = nn.AdaptiveAvgPool2d(size)
-        self.mp = nn.AdaptiveMaxPool2d(size)
-        
-    def forward(self, x):
-        return torch.cat([self.mp(x), self.ap(x)], 1)
-
-# https://docs.fast.ai/layers.html#Flatten
-class Flatten(nn.Module):
-    def forward(self, x): return x.view(x.size(0), -1)
     
-in_features = resnet.fc.in_features * 2    
+in_features = resnet.fc.in_features
 num_hidden = 512
 
 head = nn.Sequential(
-    AdaptiveConcatPool2d(1),
-    Flatten(),
+    nn.AdaptiveAvgPool2d(1),
+    nn.Flatten(),
     nn.BatchNorm1d(in_features),
     nn.Dropout(0.5),
     nn.Linear(in_features=in_features, out_features=num_hidden),
@@ -289,17 +272,6 @@ plt.title('Receiver Operating Characteristics'); plt.legend();
 ![png]({{ BASE_PATH }}/images/2019-08-12-histopathologic-cancer-detection-with-transfer-learning_31_0.png) 
 
 
-We achieved an area under the ROC curve of 0.986 (best possible being 1.0), all
-by adding a few layers to a pre-trained model! This example serves as a
-testament as to how well transfer learning applied, even on data that is very
-different than the original model was trained on. The best part is, the same
-code can be used to apply transfer learning to a completely different image
-classification task. Feel free to copy my
-[notebook](https://github.com/teddykoker/blog/tree/master/_notebooks/2019-08-12-histopathologic-cancer-detection-with-transfer-learning.ipynb)
-and try it for yourself!
+We achieved an area under the ROC curve of 0.986 (best possible being 1.0), all by adding a few layers to a pre-trained model! This example serves as a testament as to how well transfer learning applied, even on data that is very different than the original model was trained on. The best part is, the same code can be used to apply transfer learning to a completely different image classification task. Feel free to copy my [notebook]() and try it for yourself!
 
-If you liked this article, be sure to follow
-[@teddykoker](https://twitter.com/teddykoker), and check out my [other
-articles](/).
-Stay tuned for my upcoming post on building and setting up your own affordable
-deep learning computer!
+If you liked this article, be sure to follow [@teddykoker](https://twitter.com/teddykoker), and check out my other articles. Stay tuned for my upcoming post on building and setting up your own affordable deep learning computer!
