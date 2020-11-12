@@ -39,7 +39,7 @@ $$
 
 This function $\varphi$ is known as the [polynomial
 kernel](https://en.wikipedia.org/wiki/Polynomial_kernel) of degree $d=2$. If we
-apply it to our data, xx, we can visualize that it becomes linearly separable:
+apply it to our data, $x$, we can visualize that it becomes linearly separable:
 
 ![poly circles](/images/poly_circles.png)
 
