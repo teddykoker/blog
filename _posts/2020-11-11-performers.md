@@ -222,12 +222,12 @@ def z_sin_cos(x, omega):
 
 def attention_hat(q, k, v, random_dim)
     l, d = q.shape
-    normalizer = 1 / (d ** 0.25)           # to normalize before multiplication
-    omega = np.random.randn(random_dim, d) # generate i.i.d. gaussian features
-    q_prime = z_sin_cos(q * normalizer)    # apply feature map z to Q
-    k_prime = z_sin_cos(k * normalizer)    # apply feature map z to K
-    a_hat = (q_prime @ k_prime.T)          # approximate attention matrix
-    d_inv = np.diag(1 / (a_hat @ np.ones(l))) # rest of attention as usual
+    normalizer = 1 / (d ** 0.25)               # to normalize before multiplication
+    omega = np.random.randn(random_dim, d)     # generate i.i.d. gaussian features
+    q_prime = z_sin_cos(q * normalizer, omega) # apply feature map z to Q
+    k_prime = z_sin_cos(k * normalizer, omega) # apply feature map z to K
+    a_hat = (q_prime @ k_prime.T)              # approximate attention matrix
+    d_inv = np.diag(1 / (a_hat @ np.ones(l)))  # rest of attention as usual
     return d_inv @ a_hat @ v
 ```
 
