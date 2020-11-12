@@ -1,8 +1,10 @@
 ---
-image: 'TODO'
+image: 'https://teddykoker.com/images/iid_vs_ortho.png'
 layout: post
 title: 'Performers: The Kernel Trick, Random Features, and Attention'
 ---
+
+THIS IS A DRAFT. CHECK AGAIN TOMORROW OR CONTINUE AT YOUR OWN RISK.
 
 Google AI recently released a paper, *Rethinking Attention with Performers*
 {% cite choromanski2020rethinking %}, which introduces *Performer*, a Transformer
@@ -298,5 +300,9 @@ the experimentation in the paper.
 ## References
 
 {% bibliography --cited %}
+
+## Appendix
+
+TODO
 
 
