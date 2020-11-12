@@ -13,7 +13,7 @@ end
 desc "Commit _site/"
 task :commit, :message do |t, arg|
   puts "\n## Building _site files"
-  status = system("jekyll build")
+  status = system("JEKYLL_ENV=production jekyll build")
   puts status ? "Success" : "Failed"
 
   puts "\n## Staging modified files"
