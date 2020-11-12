@@ -229,6 +229,10 @@ def attention_hat(q, k, v, random_dim)
     return d_inv @ a_hat @ v
 ```
 
+Now, instead of our attention matrix $A$ being of size $\mathbb{R}^{L \times L}$,
+it is only of size $\mathbb{R}^{R \times L}$, with the sum of each row
+approximating that of it's full-rank counterpart.
+
 ## Orthogonal Random Features
 
 Before we make any comparisons between our approximate and full-rank attention
