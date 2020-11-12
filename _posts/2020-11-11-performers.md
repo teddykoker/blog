@@ -1,10 +1,8 @@
 ---
 image: 'https://teddykoker.com/images/iid_vs_ortho.png'
 layout: post
-title: 'Performers: The Kernel Trick, Random Features, and Attention'
+title: 'Performers: The Kernel Trick, Random Fourier Features, and Attention'
 ---
-
-THIS IS A DRAFT. CHECK AGAIN TOMORROW OR CONTINUE AT YOUR OWN RISK.
 
 Google AI recently released a paper, *Rethinking Attention with Performers*
 {% cite choromanski2020rethinking %}, which introduces *Performer*, a Transformer
@@ -110,7 +108,7 @@ approximate any function $K$ that can be written in terms of $K_\text{gauss}$.**
 
 ## Attention
 
-In a [previous blog post](/nlp-from-scratch-annotated-attention/), we went over
+In a [previous blog post](/2020/02/nlp-from-scratch-annotated-attention/), we went over
 the *self-attention* mechanism, an how it was introduced for language
 translation. Nowadays, most language models use *scaled-dot-product attention* as
 defined in the *Transformers* paper {% cite vaswani2017attention %}:
@@ -198,7 +196,7 @@ K_\text{gauss}(x_i, x_j)
 \exp \left( \frac{\lVert x_j \rVert^2}{2} \right)
 $$
 
-See Appendix TODO for full derivation. With this derivation, it is trivial to
+See Appendix for full derivation. With this derivation, it is trivial to
 come up with our random feature mapping $z_\omega$ that approximates
 the $K_\text{softmax}$ kernel:
 
@@ -303,6 +301,51 @@ the experimentation in the paper.
 
 ## Appendix
 
-TODO
+Derive $
+K_\text{softmax}(x_i, x_j) =
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)
+K_\text{gauss}(x_i, x_j)
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right)
+$:
+
+
+$$ K_\text{gauss}(x_i, x_j) = \exp(-\gamma \lVert x_i - x_j \rVert^2) $$
+
+Let $\gamma = \frac{1}{2}$
+
+$$ 
+\begin{aligned}
+
+K_\text{gauss}(x_i, x_j) &= \exp \left(-\frac{1}{2} \lVert x_i - x_j \rVert^2 \right) \\
+
+&= \exp \left(-\frac{1}{2} (\lVert x_i \rVert^2 + \lVert x_j \rVert^2 - 2(x_i^\top x_j)) \right) \\
+
+&= \exp \left(
+  -\frac{\lVert x_i \rVert^2}{2}  
+  -\frac{\lVert x_j \rVert^2}{2} + x_i^\top x_j \right) \\
+
+&= \exp \left(
+  -\frac{\lVert x_i \rVert^2}{2}  
+  -\frac{\lVert x_j \rVert^2}{2} + x_i^\top x_j \right) \\
+
+&= 
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)^{-1}
+\exp (x_i^\top x_j ) 
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right)^{-1}\\
+
+
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)
+K_\text{gauss}(x_i, x_j)
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right) 
+&= \exp (x_i^\top x_j) \\
+
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)
+K_\text{gauss}(x_i, x_j)
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right) 
+&= K_\text{softmax}(x_i, x_j)
+
+\end{aligned}
+$$
+
 
 
