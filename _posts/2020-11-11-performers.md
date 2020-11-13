@@ -261,6 +261,11 @@ full-rank attention.
 code to reproduce these figures can be found at:
 [github.com/teddykoker/performer](https://github.com/teddykoker/performer).*
 
+We can see that our current approximation method using $z^\text{sin/cos}$ does
+not work well when using independent and identically distributed (IID) features,
+but the estimation is quite good for orthogonal random features with a large
+enough $R$.
+
 ## Positive Random Features
 
 {% cite choromanski2020rethinking %} note that the random feature map
