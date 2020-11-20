@@ -19,7 +19,8 @@ Before we talk about Attention, it is important to understand the [kernel
 trick](https://en.wikipedia.org/wiki/Kernel_method#Mathematics:_the_kernel_trick).
 Gregory Gundersen gives a great explanation on his
 [blog](http://gregorygundersen.com/blog/2019/12/10/kernel-trick/), but we will go over a
-brief summary here.
+brief summary here. This section is not completely necessary for understanding
+*Performers*, but might provide some helpful context.
 
 Say we have some data $x \in \mathbb{R}^2$:
 
@@ -47,9 +48,11 @@ $$ \text{maximize} \quad f(c) = \sum_n^N c_n - \frac{1}{2}
 \sum_i^N \sum_j^N c_i c_j y_i y_j (\textcolor{blue}{x_i^\top x_j})
 $$
 
-If this expression is unfamiliar to you, just note the dot-product of our data,
-$\textcolor{blue}{x_i^\top x_j}$. If we want to use our kernel function $\varphi$
-now, we can simple wrap each $x_n$ with it like so:
+Don't worry if this expression is unfamiliar, just note that we are computing a
+dot product between two samples $\textcolor{blue}{x_i^\top x_j}$, and repeating
+this process many times.
+If we want to use our kernel function $\varphi$ so that the data is linearly seperable,
+we can simple wrap each $x_n$ with $\varphi$ to map it into a higher dimension:
 
 $$ \text{maximize} \quad f(c) = \sum_n^N c_n - \frac{1}{2} 
 \sum_i^N \sum_j^N c_i c_j y_i y_j (\textcolor{blue}{\varphi(x_i)^\top \varphi(x_j)})
@@ -79,6 +82,12 @@ can rewrite our linear SVM expression one more time:
 $$ \text{maximize} \quad f(c) = \sum_n^N c_n - \frac{1}{2} 
 \sum_i^N \sum_j^N c_i c_j y_i y_j \textcolor{blue}{K(x_i, x_j)}
 $$
+
+Now instead of doing a dot product in $\mathbb{R}^3$, we are doing it in
+$\mathbb{R}^2$. This might not make much of an impact in terms of computational
+cost in this case, but it can make a much bigger difference with more complex
+kernel functions and higher dimensional data. Next, we will see how **Random
+Fourier Features** can reduce the computational cost of some kernel functions *even more*.
 
 ## Random Fourier Features
 
@@ -144,8 +153,9 @@ used with the Transformer, which means they are not usable for many tasks that
 may require much longer sequence lengths, such as dialog, protein sequences, and
 images.
 
-Many have developed their own "X-former" in an attempt to reduce this
-complexity, for a full survey see {% cite tay2020efficient %}.
+Over the past few months, many have developed their own "X-former" to
+reduce this complexity, and this is becoming a growing area of research; for a
+full survey see {% cite tay2020efficient %}.
 
 ## Performer
 
@@ -172,15 +182,19 @@ Now lets say we define a softmax kernel, $K_\text{softmax} : \mathbb{R}^d \times
 
 $$K_\text{softmax}(x_i, x_j) = \exp(x_i^\top x_j)$$
 
-We can rewrite the computation of $A$ yet again as:
+Using this softmax kernel, we can rewrite the computation of any element within
+$A$:
 
 $$A(i, j) = K_\text{softmax}(q_i^\top,k_j^\top)$$
 
 Where $q_i$, $k_j$, represent the $i^\text{th}$,
-$j^\text{th}$ row vector in $Q$, $K$, respectively. Representing the attention
-matrix as the output of $K_\text{softmax}$ means we can now
-approximate it at a **lower dimensionality** using some random feature mapping 
-$z: \mathbb{R}^L \mapsto \mathbb{R}^R$:
+$j^\text{th}$ row vector in $Q$, $K$, respectively. 
+
+
+
+Since the attention matrix is now written as the output of a kernel function $K_\text{softmax}$,
+we could potentially approximate it at a **lower dimensionality** as we did for the Gaussian kernel above
+feature mapping $z: \mathbb{R}^L \mapsto \mathbb{R}^R$:
 
 $$ K_{softmax}(x_i, x_j) \approx z(x_i)^\top z(x_j) $$
 
@@ -196,9 +210,10 @@ K_\text{gauss}(x_i, x_j)
 \exp \left( \frac{\lVert x_j \rVert^2}{2} \right)
 $$
 
-See Appendix for full derivation. With this derivation, it is trivial to
+See [Appendix](#appendix) for full derivation. With this derivation, we can
 come up with our random feature mapping $z_\omega$ that approximates
-the $K_\text{softmax}$ kernel:
+the $K_\text{softmax}$ kernel using the Random Fourier features approximation of
+the Gaussian kernel:
 
 $$ z_\omega^\text{sin/cos}(x) = 
 \exp \left( \frac{\lVert x \rVert^2}{2} \right)
@@ -206,7 +221,11 @@ $$ z_\omega^\text{sin/cos}(x) =
 \sin(\omega^\top x) \end{bmatrix} $$
 
 Where, again, $\omega \sim \mathcal{N}_R(0, I)$ is sampled from a spherical
-Gaussian. This looks quite complex at this point, but we can now write the full
+Gaussian. **Now, instead of our attention matrix $A$ being of size $\mathbb{R}^{L
+\times L}$, it is only of size $\mathbb{R}^{R \times L}$, with the sum of each
+row approximating that of it's full-rank counterpart.**
+
+This looks quite complex at this point, but we can now write the full
 approximated attention mechanism, $\widehat{\text{Attention}}(Q, K, V)$, in Python like so:
 
 ```python
@@ -229,15 +248,19 @@ def attention_hat(q, k, v, random_dim)
     return d_inv @ a_hat @ v
 ```
 
-Now, instead of our attention matrix $A$ being of size $\mathbb{R}^{L \times L}$,
-it is only of size $\mathbb{R}^{R \times L}$, with the sum of each row
-approximating that of it's full-rank counterpart.
 
-## Orthogonal Random Features
+## Improvements
 
 Before we make any comparisons between our approximate and full-rank attention
-methods, it is important to mention an additional method introduced in
-{% cite choromanski2020rethinking %}:
+method, it is import to mention a couple additional improvements that the
+authors make to much better estimate the full-rank attention: Orthogonal Random
+Features, and Positive Random Features.
+
+### Orthogonal Random Features
+
+The authors prove theoretically that using exactly orthogonal random features
+can yield an improved estimation over independent and identically distributed
+(IID) features:
 
 >To further reduce the variance of the estimator (so that we can use even
 > smaller number of random features $R$), we entangle different random samples $\omega_1, ..., \omega_R$
@@ -248,8 +271,11 @@ methods, it is important to mention an additional method introduced in
 
 See Proof of Theorem 2 in section F.4 of the appendix in {% cite
 choromanski2020rethinking %} for the proof that orthogonal random features can improve estimation.
+My code to generate orthogonal Gaussian features using Gram-Schmidt
+renormalization can be found
+[here](https://github.com/teddykoker/performer/blob/main/performer.py#L64-L82).
 
-## IID vs. Orthogonal Random Features
+#### IID vs. Orthogonal Random Features
 
 Using $L = 1024$, $d = 16$, we will vary the number of random features $R$
 and measure the mean-squared-error (MSE) of our estimated attention and the
@@ -268,7 +294,7 @@ enough $R$.
 
 ## Positive Random Features
 
-{% cite choromanski2020rethinking %} note that the random feature map
+{% cite choromanski2020rethinking %} also note that the random feature map
 $z^\text{sin/cos}$ can yield negative values, especially when the kernel
 outputs approach 0. This is very common for pairs with no interaction, so it can lead
 to instability in the estimation. To get around this, they propose a new random
