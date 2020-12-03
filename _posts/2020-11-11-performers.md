@@ -123,7 +123,7 @@ translation. Nowadays, most language models use *scaled-dot-product attention* a
 defined in the *Transformers* paper {% cite vaswani2017attention %}:
 
 $$ \text{Attention}(Q, K, V) =
-\text{softmax} \left( \frac{QK^\top}{\sqrt{d}}\right)$$
+\text{softmax} \left( \frac{QK^\top}{\sqrt{d}}\right) V $$
 
 Where $Q, K, V \in \mathbb{R}^{L \times d}$, $L$ is the sequence length, and $d$
 is some hidden dimension. We can expand the $\text{softmax}$ and rewrite
