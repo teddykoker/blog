@@ -1,5 +1,5 @@
 ---
-image: 'https://teddykoker.com/images/TODO'
+image: 'https://teddykoker.com/images/dataloader_time.png'
 layout: post
 title: 'DataLoaders Explained: Building a Multi-Process Data Loader from Scratch'
 ---
@@ -120,9 +120,9 @@ is perfect for this since it can be shared across processes.
 [`threading`](https://docs.python.org/3/library/threading.html) package;
 however, due to the Global Interpreter Lock (GIL), execution of any Python code
 is limited to one thread at a time, while all other threads are locked. To
-circumvent this, we can
+circumvent this, we can use
 [`multiprocessing`](https://docs.python.org/3/library/multiprocessing.html),
-using subprocesses instead of threads. Since each subprocess has its own memory,
+which uses subprocesses instead of threads. Since each subprocess has its own memory,
 we do not have to worry about the GIL.*
 
 ## Multiprocess Data Loader
@@ -274,7 +274,7 @@ class Dataset:
 
     def __getitem__(self, index):
         time.sleep(self.load_time)
-        return np.zeros((3, 32, 32)), 1  # return img, label
+        return np.zeros((1, 28, 28)), 1  # return img, label
 ```
 
 We can also mimic a training loop by iterating through a dataloader, sleeping
@@ -314,4 +314,61 @@ that using a value equal to 4 times the number of GPUs being used, but I would
 recommend trying a few values to see what works best.
 
 
+Overall, the `DataLoader` is a great tool for deep learning, and building one
+from scratch is a great way to understand how and why it works. As Richard
+Feynman wrote, "What I cannot create, I do not understand".
+
+## Bonus: PyTorch Lightning
+
+Often when applying deep learning to problems, one of the most difficult steps
+is loading the data. Once this is done, a great tool for training models is
+[PyTorch Lightning](https://www.pytorchlightning.ai/). With Lightning, you
+simply define your `training_step` and `configure_optimizers`, and it does the
+rest of the work:
+
+```python
+import pytorch_lightning as pl
+import torch
+from torch import nn
+
+class Model(pl.LightningModule):
+    def __init__(self):
+        super().__init__()
+        # define a simple multilayer perceptron
+        self.mlp = nn.Sequential(
+            nn.Flatten(),
+            nn.Linear(28 * 28, 128),
+            nn.ReLU(),
+            nn.Linear(128, 10),
+        )
+
+    def training_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self.mlp(x)  # forward pass
+        loss = nn.functional.cross_entropy(y_hat, y)  # compute loss
+        return loss
+
+    def configure_optimizers(self):
+        # return the optimizser we want to use
+        return torch.optim.Adam(self.mlp.parameters(), lr=1e-3)
+```
+
+With the model defined, we can use our own `DataLoader` implementation to train
+the model, which is very easy using Lightning's `Trainer` class:
+
+```python
+from torch.utils.data.dataloader import default_collate as torch_collate
+
+ds = Dataset()
+dl = DataLoader(ds, collate_fn=torch_collate)
+model = Model()
+trainer = pl.Trainer(max_epochs=10)
+trainer.fit(model, dl)
+```
+
+Lightning eliminates the need to rewrite the same training loop code over and
+over again, and also adds features like mixed-precision training, multi-node
+training, sharded optimizers, and even training on TPUs just by supplying
+different arguments to the `Trainer`. You can read more about Lightning on it's
+[documentation](https://pytorch-lightning.readthedocs.io/en/stable/).
 
