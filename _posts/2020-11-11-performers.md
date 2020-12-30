@@ -243,9 +243,10 @@ def attention_hat(q, k, v, random_dim)
     omega = np.random.randn(random_dim, d)     # generate i.i.d. gaussian features
     q_prime = z_sin_cos(q * normalizer, omega) # apply feature map z to Q
     k_prime = z_sin_cos(k * normalizer, omega) # apply feature map z to K
-    a_hat = (q_prime @ k_prime.T)              # approximate attention matrix
-    d_inv = np.diag(1 / (a_hat @ np.ones(l)))  # rest of attention as usual
-    return d_inv @ a_hat @ v
+    # rest of attention (note the order of operations is changed for efficiency)
+    d_inv = np.diag(1 / (q_prime @ (k_prime.T @ np.ones(l))))
+    return d_inv @ (q_prime @ (k_prime.T @ v))
+
 ```
 
 
