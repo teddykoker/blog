@@ -8,7 +8,7 @@ permalink: /about/
     style="float: right; max-width: 33%; margin: 0 0 1em 2em;">
 
 I’m Teddy Koker, a machine learning researcher and algorithmic trading enthusiast.
-I currently work as a Research Engineer at [Grid AI](https://grid.ai).
+I currently work as a Data Scientist at [MIT Lincoln Laboratory](https://www.ll.mit.edu/).
 
 Previously, I have worked at [Harvard Medical
 School](https://hms.harvard.edu/), and [Analog Devices Inc.](https://www.analog.com/en/index.html).
