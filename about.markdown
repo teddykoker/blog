@@ -13,6 +13,6 @@ I currently work as a Data Scientist at [MIT Lincoln Laboratory](https://www.ll.
 Previously, I have worked at [Harvard Medical
 School](https://hms.harvard.edu/), and [Analog Devices Inc.](https://www.analog.com/en/index.html).
 
-I am best reached by [email](mailto:teddy.koker@gmail.com), but feel free to 
+I am best reached by email, but feel free to 
 [DM me](https://twitter.com/messages/compose?recipient_id=970337853912821760") on Twitter for
 a quick question.
