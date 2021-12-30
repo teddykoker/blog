@@ -1,6 +1,4 @@
 ---
-bibliography: 'bib.bib'
-csl: 'footnotes.csl'
 image: 'https://teddykoker.com/images/betting.png'
 layout: post
 title: 'Beating the Odds: Machine Learning for Horse Racing'
@@ -8,7 +6,8 @@ title: 'Beating the Odds: Machine Learning for Horse Racing'
 
 Inspired by the story of [Bill
 Benter](https://en.wikipedia.org/wiki/Bill_Benter), a gambler who
-developed a computer model that made him close to a billion dollars[^1]
+developed a computer model that made him close to a billion dollars {% cite
+gambler %}
 betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to
 see if I could use machine learning to identify inefficiencies in horse
 racing wagering. <!--more-->
@@ -49,14 +48,13 @@ equipment).
 last raced. A horse that had been injured in its last race may have not
 raced recently.
 
-**Mean Beyer Speed Figure**: Originally introduced in Andrew Beyer's
-*Picking Winners*[^2], the Beyer Speed Figure is system for rating a
-horse's performance in a race that is comparable across different
-tracks, distances, and going (track conditions). This provides a way to
-compare horses that have not raced under the same circumstances. After
-reading Beyer's book, I implemented his rating system on my data. For
-this feature, I calculated the mean speed figure over the horse's past 5
-race the race.
+**Mean Beyer Speed Figure**: Originally introduced in *Picking Winners* {% cite
+beyer1994picking %}, the Beyer Speed Figure is system for rating a horse's
+performance in a race that is comparable across different tracks, distances, and
+going (track conditions). This provides a way to compare horses that have not
+raced under the same circumstances. After reading Beyer's book, I implemented
+his rating system on my data. For this feature, I calculated the mean speed
+figure over the horse's past 5 race the race.
 
 **Last Figure**: Speed figure of the last race the horse was in.
 
@@ -69,8 +67,9 @@ track conditions of the current race.
 **Best Figure at Track**: Best speed figure the horse has gotten at the
 track of the current race.
 
-Engineering more features may yield better results; Benter's model[^3]
-included many different types of features from many data sources.
+Engineering more features may yield better results; Benter's model {% cite
+benter2008computer %} included many different types of features from many
+data sources.
 
 ## Model
 
@@ -179,14 +178,3 @@ machine learning methods, may be a feasible task.
 Thank you for reading! For any questions regarding this post or others,
 feel free to reach out on twitter:
 [@teddykoker](https://twitter.com/teddykoker).
-
-[^1]: Kit Chellel, *The Gambler Who Cracked the Horse-Racing Code*,
-    2018,
-    <https://www.bloomberg.com/news/features/2018-05-03/the-gambler-who-cracked-the-horse-racing-code>.
-
-[^2]: Andrew Beyer, *Picking Winners: A Horseplayer's Guide* (Houghton
-    Mifflin Harcourt, 1994).
-
-[^3]: William Benter, "Computer Based Horse Race Handicapping and
-    Wagering Systems: A Report," in *Efficiency of Racetrack Betting
-    Markets* (World Scientific, 2008), 183--98.

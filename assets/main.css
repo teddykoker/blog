@@ -1,0 +1,215 @@
+html {
+  font-family: -apple-system, Helvetica, arial, sans-serif;
+  color: rgba(0, 0, 0, 0.8);
+  line-height: 1.5em;
+  -ms-text-size-adjust: 100%;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+}
+body .content {
+  margin-bottom: 120px;
+}
+a {
+  color: rgba(0, 0, 0, 0.8);
+}
+a:hover {
+  text-decoration: none;
+}
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  font-family: -apple-system, Helvetica, arial, sans-serif;
+}
+h1 {
+  line-height: 1.2em;
+}
+.clear {
+  clear: both;
+}
+.hidden {
+  display: none;
+}
+.wrap {
+  max-width: 700px;
+  margin: 0 auto;
+}
+.mono {
+  font-family: monospace;
+}
+.nav {
+  margin-top: 15px;
+  margin-bottom: 15px;
+}
+.nav a {
+  color: rgba(0, 0, 0, 0.6);
+  text-decoration: none;
+  border-bottom: none;
+  font-size: 12px;
+}
+.nav a:hover {
+  font-weight: bold;
+}
+.nav ul {
+  list-style-type: none;
+  padding: 0;
+}
+.nav ul li {
+  display: inline;
+  margin-right: 10px;
+}
+.front-matter {
+  padding: 20px 0;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+.front-matter h4 {
+  font-family: -apple-system, Helvetica, arial, sans-serif;
+}
+.front-matter .bylines .byline {
+  margin-right: 20px;
+  float: left;
+}
+.front-matter .bylines .byline h3,
+.front-matter .bylines .byline p {
+  margin: 0;
+  font-family: -apple-system, Helvetica, arial, sans-serif;
+}
+.front-matter .bylines .byline h3 {
+  font-size: 9px;
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.5);
+}
+.front-matter .bylines .byline p {
+  font-size: 10px;
+  line-height: 1.6em;
+}
+.article {
+  font-size: 15px;
+  line-height: 1.6em;
+  color: rgba(0, 0, 0, 0.8);
+  margin-top: 50px;
+  margin-bottom: 50px;
+}
+.article blockquote {
+  margin: 0;
+  padding: 0 1em;
+  color: #777;
+  border-left: 0.25em solid #ddd;
+}
+.article h2 {
+  font-size: 26px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  padding-bottom: 1rem;
+  padding-top: 1em;
+}
+.article .figure {
+  border-top: 1px solid hsla(0, 0%, 0%, 0.2);
+  border-bottom: 1px solid hsla(0, 0%, 0%, 0.2);
+  padding: 20px 0;
+}
+.article .figure .caption {
+  padding-top: 15px;
+  display: inline-block;
+  font-size: 13px;
+  line-heigh: 1.2em;
+}
+.article .figure .caption-label {
+  font-weight: bold;
+}
+.article .footnote {
+  line-height: 0;
+}
+.article div.highlight {
+  border-top: 1px solid rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  font-size: 13px;
+  line-height: 1.3em;
+}
+.article ul {
+  padding: 0 15px;
+}
+.article hr {
+  border-bottom: none;
+  border-top: 1px solid rgba(0, 0, 0, 0.7);
+  margin: 33px auto;
+  width: 70px;
+}
+#bibliography {
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+#bibliography ol.bibliography {
+  padding-left: 15px;
+  padding-top: 30px;
+  font-size: 12px;
+  color: rgba(0, 0, 0, 0.5);
+}
+#blog {
+  margin-top: 80px;
+  margin-bottom: 100px;
+}
+#blog #intro {
+  font-size: 14px;
+  font-style: italic;
+  line-height: 1.4em;
+  margin-bottom: 40px;
+}
+#blog .quote {
+  margin-bottom: 30px;
+}
+#blog .quote p {
+  margin-bottom: 5px;
+}
+#blog .post-date {
+  text-transform: uppercase;
+  color: rgba(0, 0, 0, 0.7);
+  font-size: 12px;
+  font-weight: bold;
+  margin-top: 4px;
+  margin-bottom: 4px;
+}
+#blog .post-title {
+  display: inline-block;
+  font-weight: bold;
+  margin-bottom: 0;
+}
+#blog .post-title a {
+  font-size: 18px;
+  text-decoration: none;
+}
+#blog .post-title a:hover {
+  text-decoration: underline;
+}
+#blog .post-subtitle {
+  font-size: 14px;
+  margin-top: 0;
+  margin-bottom: 25px;
+  line-height: 1.5em;
+}
+#blog .year {
+  font-size: 18px;
+  position: relative;
+  right: 100px;
+  color: rgba(0, 0, 0, 0.5);
+  width: 100px;
+  margin-bottom: -24px;
+}
+hr {
+  border-top: #ccc;
+}
+@media screen and (max-width: 700px) {
+  body {
+    margin: 0 7px;
+  }
+}
+
+
+img {
+  max-width: 100%;
+  vertical-align: middle;
+}

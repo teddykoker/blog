@@ -6,21 +6,19 @@ layout: post
 title: Deep Learning for Guitar Effect Emulation
 ---
 
-Since the 1940s, electric guitarists, keyboardists, and other
-instrumentalists have been using [effects
-pedals](https://en.wikipedia.org/wiki/Effects_unit), devices that modify
-the sound of the original audio source. Typical effects include
-distortion, compression, chorus, reverb, and delay. Early effects pedals
-consisted of basic analog circuits, often along with vacuum tubes, which
-were later replaced with transistors. Although many pedals today apply
-effects digitally with modern signal processing techniques, many purists
-argue that the sound of analog pedals can not be replaced by their
-digital counterparts. We'll follow a deep learning approach to see if we
-can use machine learning to replicate the sound of an iconic analog
-effect pedal, the [Ibanez Tube
-Screamer](https://en.wikipedia.org/wiki/Ibanez_Tube_Screamer). This post
-will be mostly a reproduction of the work done by Alec Wright et al. in
-*Real-Time Guitar Amplifier Emulation with Deep Learning*[^1].
+Since the 1940s, electric guitarists, keyboardists, and other instrumentalists
+have been using [effects pedals](https://en.wikipedia.org/wiki/Effects_unit),
+devices that modify the sound of the original audio source. Typical effects
+include distortion, compression, chorus, reverb, and delay. Early effects pedals
+consisted of basic analog circuits, often along with vacuum tubes, which were
+later replaced with transistors. Although many pedals today apply effects
+digitally with modern signal processing techniques, many purists argue that the
+sound of analog pedals can not be replaced by their digital counterparts. We'll
+follow a deep learning approach to see if we can use machine learning to
+replicate the sound of an iconic analog effect pedal, the [Ibanez Tube
+Screamer](https://en.wikipedia.org/wiki/Ibanez_Tube_Screamer). This post will be
+mostly a reproduction of the work done by Alec Wright et al. in *Real-Time
+Guitar Amplifier Emulation with Deep Learning* {% cite wright2020real %}.
 
 <!--more-->
 The code for this model (and training data) is available here:
@@ -31,14 +29,14 @@ The code for this model (and training data) is available here:
 Popularized by blues guitarist Stevie Ray Vaughan, the Ibanez Tube
 Screamer is used by many well known guitarists including Gary Clark Jr.,
 The Edge (U2), Noel Gallagher (Oasis), Billie Joe Armstrong (Green Day),
-John Mayer, Eric Johnson, Carlos Santana, and many more[^2]. Using my
+John Mayer, Eric Johnson, Carlos Santana, and many more {% cite ibanez %}. Using my
 own Ibanez TS9 Tube Screamer, we collect data by connecting the pedal to
 an audio interface and recording the output of a dataset of prerecorded
 guitar playing. The
 [IDMT-SMT-Guitar](https://www.idmt.fraunhofer.de/en/business_units/m2d/smt/guitar.html)
 dataset contains dry signal recordings of many different electric
 guitars with both monophonic and polyphonic phrases over different
-genres and playing techniques[^3]. We'll use a 5 minute subset of this
+genres and playing techniques {% cite kehling2014automatic %}. We'll use a 5 minute subset of this
 data, and store both the original audio as well as the output of the
 pedal when the audio is passed through it. To maintain reproducibility,
 we set all of the knobs on both the pedal and audio interface to 12
@@ -50,7 +48,7 @@ block;">
 ## Model
 
 Our model architecture will be nearly identical to that of *WaveNet: A
-Generative Model for Raw Audio*[^4]. WaveNet models are able to generate
+Generative Model for Raw Audio* {% cite oord2016wavenet %}. WaveNet models are able to generate
 audio that is both qualitatively and quantitatively better than more
 traditional LSTM and statistical-based models.
 
