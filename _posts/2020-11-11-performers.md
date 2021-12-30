@@ -331,10 +331,6 @@ potential to be used in many different sub-fields of deep learning.
 Special thanks to Richard Song of Google AI for providing details around some of
 the experimentation in the paper.
 
-## References
-
-{% bibliography --cited %}
-
 ## Appendix
 
 Derive $
