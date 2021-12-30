@@ -6,8 +6,6 @@ url: "https://teddykoker.com" # the base hostname & protocol for your site, e.g.
 
 google_analytics: UA-138897125-1
 permalink: /:categories/:year/:month/:title/
-environment: prod
-url: "http://gregorygundersen.com"  # Sitemap base URL.
 plugins:
   - jekyll-scholar
   - jekyll-sitemap
