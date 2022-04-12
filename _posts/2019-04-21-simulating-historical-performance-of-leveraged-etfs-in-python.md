@@ -1,6 +1,7 @@
 ---
 layout: post
 title: "Simulating Historical Performance of Leveraged ETFs in Python"
+hide: True
 ---
 In this post we will look at the long term performance of leveraged ETFs, as well as simulate how they may have performed in time periods before their inception.
 

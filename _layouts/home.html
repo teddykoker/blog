@@ -5,20 +5,22 @@ layout: default
     <h1>Posts</h1>
     <div id='posts' class='section'>
         {% for post in site.posts %}
-            <div class='post-row'>
-                <p class='post-title'>
-                    <a href="{{ post.url }}">
-                        {{ post.title }}
-                    </a>
+            {% unless post.hide %}
+                <div class='post-row'>
+                    <p class='post-title'>
+                        <a href="{{ post.url }}">
+                            {{ post.title }}
+                        </a>
+                    </p>
+                    <p class='post-date'>
+                        {{ post.date | date_to_long_string }}
+                    </p>
+                </div>
+                <p class='post-subtitle'>
+                    {{ post.excerpt }}
                 </p>
-                <p class='post-date'>
-                    {{ post.date | date_to_long_string }}
-                </p>
-            </div>
-            <p class='post-subtitle'>
-                {{ post.excerpt }}
-            </p>
-            <span class='hidden'>{{ forloop.index }}</span>
+                <span class='hidden'>{{ forloop.index }}</span>
+            {% endunless %}
         {% endfor %}
     </div>
 </div>

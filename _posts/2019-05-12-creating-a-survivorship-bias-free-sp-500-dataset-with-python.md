@@ -2,6 +2,7 @@
 layout: post
 title: "Creating a Survivorship Bias-Free S&P 500 Dataset with Python"
 image: "http://teddykoker.com/images/2019-05-12-creating-a-survivorship-bias-free-sp500-dataset-with-python_2_0.png"
+hide: True
 ---
 When developing a stock trading strategy, it is important that the backtest be as accurate as possible. In some of my previous strategies, I have noted that the backtest did not account for survivorship bias. [Survivorship bias](https://en.wikipedia.org/wiki/Survivorship_bias) is a form of selection bias caused by only focusing on assets that have already passed some sort of selection process.
 

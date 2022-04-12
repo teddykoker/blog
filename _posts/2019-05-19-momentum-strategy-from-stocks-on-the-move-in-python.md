@@ -2,6 +2,7 @@
 layout: post
 title: "Momentum Strategy from \"Stocks on the Move\" in Python"
 image: "http://teddykoker.com/images/2019-05-19-momentum-strategy-from-stocks-on-the-move-in-python_13_0.png"
+hide: True
 ---
 In this post we will look at the momentum strategy from Andreas F. Clenow's book [Stocks on the Move: Beating the Market with Hedge Fund Momentum Strategy](https://amzn.to/2YzEIvL) and backtest its performance using the survivorship bias-free dataset we created in my [last post](/2019/05/creating-a-survivorship-bias-free-sp-500-dataset-with-python/).
 
