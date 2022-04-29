@@ -11,10 +11,10 @@ modifications to the basic mini-batch gradient descent have been proposed, such
 as adding momentum or Nesterov's Accelerated Gradient {% cite
 sutskever2013importance %}, as well as the popular Adam optimizer {% cite
 kingma2014adam %}. When training a deep neural network, the optimizer, along
-with its various hyperparameters is often selected by sweeping various
+with its various hyperparameters, is often selected by sweeping various
 combinations for the best evaluated score. The paper *Learning to Learn by
 Gradient Descent by Gradient Descent* {% cite andrychowicz2016learning %}
-demonstrate how the optimizer itself can be replaced with a simple neural
+demonstrates how the optimizer itself can be replaced with a simple neural
 network, which can be trained end-to-end. In this post, we will see how
 [JAX](https://github.com/google/jax), a relatively new Python library for
 numerical computing, can be used to implement a version of the optimizer
@@ -39,16 +39,16 @@ with some values, $g_t$, obtained by your optimizer:
 
 $$ \theta_{t+1} = \theta_t + g_t $$
 
-The optimizer, $g(\cdot)$ will usually compute this updates using the gradients $\nabla
-f(\theta)$, as well as potentially some state, $h_t$:
+The optimizer, $g(\cdot)$ will usually computes this update using the gradients
+$\nabla f(\theta)$, as well as potentially some state, $h_t$:
 
 $$[g_t, h_{t+1}] = g(\nabla f(\theta_t), h_t)$$
 
 ## SGD
 
 In the case of stochastic gradient descent (SGD), this function is very simple,
-with no state necessary; the update is computed simply by negating the
-gradient and multiplying it by the learning rate, $\alpha$ in this case:
+with no state necessary; the update is computed simply as the negative product
+of the gradient and the learning rate, $\alpha$ in this case:
 
 $$ g_t = - \alpha \cdot \nabla f(\theta_t) $$
 
@@ -56,7 +56,8 @@ In Python we could write this as:
 
 ```python
 learning_rate = 1.0
-sgd = lambda gradients, state: (-learning_rate * gradients, state)
+def sgd(gradients, state):
+    return -learning_rate * gradients, state
 ```
 
 We'll see that the `state` variable is not modified, but we'll keep it to be
@@ -84,9 +85,9 @@ def quadratic_task(w, y, theta, opt_fn, opt_state, steps=100):
     return jnp.stack(losses), theta, opt_state
 ```
 
-`quadratic_task` takes our three variables $w$, $y$, and $\theta$, as well
-as an optimizer function, `opt_fn()` and `opt_state`. The gradients of function
-`f()` are computed passed to the `opt_fn()`, which then produces the updates and
+`quadratic_task` takes our three variables $w$, $y$, and $\theta$, as well as an
+optimizer function, `opt_fn()` and `opt_state`. The gradients of function `f()`
+are computed, then passed to the `opt_fn()`, which then produces the updates and
 the next state. 
 
 There are a couple JAX specific things going on:
@@ -120,7 +121,7 @@ time:
 ## Adam
 
 While simple SGD often works well for gradient-based optimization, Adam {% cite kingma2014adam
-%} is a popular choice, which works by maintaining a moving average of the
+%} is another popular choice, which works by maintaining a moving average of the
 gradient and squared gradient (referred to as the 1st and 2nd moments). While we
 could implement this ourself, [Optax](https://github.com/deepmind/optax) has
 implemented a JAX version of the optimizer that we can use in a similar manor:
@@ -145,7 +146,7 @@ We can then plot the losses against losses from SGD.
 ![sgd loss plot](/images/sgd_adam.png)
 
 In this case we'll see that Adam converges faster, and with a lower loss than
-SGD - but can we do better?
+SGD — but can we do better?
 
 ## Meta-learning an Optimizer
 
@@ -160,6 +161,18 @@ using an existing optimizer, we can use a recurrent neural network $m(\cdot)$
 with its own parameters $\phi$:
 
 $$[g_t, h_{t+1}] = m(\nabla f(\theta_t), h_t, \phi)$$
+
+
+<div class='figure'>
+    <img src="/images/lstm_opt_graph.png"
+         style="width: 80%; display: block; margin: 0 auto;"/>
+    <div class='caption'>
+        Figure 2. from <i>Learning to Learn by
+Gradient Descent by Gradient Descent</i> {% cite andrychowicz2016learning %}.
+Computational graph used for computing the gradient of the optimizer.
+Gradients on dashed lines are dropped. </div>
+</div>
+
 
 We can implement our own optimizer model as a two-layer LSTM using
 [Flax](https://github.com/google/flax):
