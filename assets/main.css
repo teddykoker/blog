@@ -216,5 +216,5 @@ img {
 }
 
 .katex-display {
-  overflow-x: auto;
+  overflow: auto hidden;
 }
