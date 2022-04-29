@@ -2,7 +2,6 @@
 image: 'https://teddykoker.com/images/lstm_opt.png'
 layout: post
 title: 'Learning JAX by Learning to Learn'
-hide: True
 ---
 
 Gradient-descent-based optimizers have long been used as the optimization
@@ -10,9 +9,7 @@ algorithm of choice for deep learning models. Over the years, various
 modifications to the basic mini-batch gradient descent have been proposed, such
 as adding momentum or Nesterov's Accelerated Gradient {% cite
 sutskever2013importance %}, as well as the popular Adam optimizer {% cite
-kingma2014adam %}. When training a deep neural network, the optimizer, along
-with its various hyperparameters, is often selected by sweeping various
-combinations for the best evaluated score. The paper *Learning to Learn by
+kingma2014adam %}. The paper *Learning to Learn by
 Gradient Descent by Gradient Descent* {% cite andrychowicz2016learning %}
 demonstrates how the optimizer itself can be replaced with a simple neural
 network, which can be trained end-to-end. In this post, we will see how
