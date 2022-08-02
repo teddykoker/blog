@@ -1,7 +1,7 @@
 ---
 image: 'https://teddykoker.com/images/lstm_opt.png'
 layout: post
-title: 'Learning JAX by Learning to Learn'
+title: 'Learning to Learn with JAX'
 ---
 
 Gradient-descent-based optimizers have long been used as the optimization
