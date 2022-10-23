@@ -1,7 +1,7 @@
 ---
 layout: page
 title: Merch
-permalink: /about/
+permalink: /merch/
 ---
 
 Coming soon.
