@@ -8,7 +8,7 @@ permalink: /publications/
 
 <br>
 **Graph Contrastive Learning for Materials**<br>
-Teddy Koker, Keegan Quigley, Will Spaeth, Nathan Frey, and Lin Li.<br>
+Teddy Koker, Keegan Quigley, Will Spaeth, Nathan C. Frey, and Lin Li.<br>
 NeurIPS AI for Accelerated Materials Design Workshop, 2022.<br>
 [arXiv](https://arxiv.org/abs/2211.13408)
 
