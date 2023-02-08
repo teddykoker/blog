@@ -7,6 +7,12 @@ permalink: /publications/
 [Google Scholar](https://scholar.google.com/citations?user=br990A8AAAAJ&hl=en)
 
 <br>
+**Domain Adaptation for Time Series Under Feature and Label Shifts**<br>
+Huan He, Owen Queen, Teddy Koker, Consuelo Cuevas, Theodoros Tsiligkaridis, Marinka Zitnik.<br>
+Preprint.<br>
+[arXiv](https://arxiv.org/abs/2302.03133) / [Code](https://github.com/mims-harvard/Raincoat) / [Website](https://zitniklab.hms.harvard.edu/projects/Raincoat/)
+
+<br>
 **Graph Contrastive Learning for Materials**<br>
 Teddy Koker, Keegan Quigley, Will Spaeth, Nathan C. Frey, and Lin Li.<br>
 NeurIPS AI for Accelerated Materials Design Workshop, 2022.<br>
@@ -17,8 +23,6 @@ NeurIPS AI for Accelerated Materials Design Workshop, 2022.<br>
 William Falcon, Ananya Harsh Jha, Teddy Koker, and Kyunghyun Cho.<br>
 Preprint.<br>
 [arXiv](https://arxiv.org/abs/2107.12329) / [Code](https://github.com/gridai-labs/aavae)
-
-
 
 <br>
 **TorchMetrics: Measuring Reproducibility in PyTorch**<br>
