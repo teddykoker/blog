@@ -7,6 +7,12 @@ permalink: /publications/
 [Google Scholar](https://scholar.google.com/citations?user=br990A8AAAAJ&hl=en)
 
 <br>
+**Encoding Time-Series Explanations through Self-Supervised Model Behavior Consistency**<br>
+Owen Queen, Thomas Hartvigsen, Teddy Koker, Huan He, Theodoros Tsiligkaridis, Marinka Zitnik<br>
+NeurIPS, 2023 (spotlight).<br>
+[arXiv](https://arxiv.org/abs/2306.02109) / [Code](https://github.com/mims-harvard/TimeX) / [Website](https://zitniklab.hms.harvard.edu/projects/TimeX/)
+
+<br>
 **Domain Adaptation for Time Series Under Feature and Label Shifts**<br>
 Huan He, Owen Queen, Teddy Koker, Consuelo Cuevas, Theodoros Tsiligkaridis, Marinka Zitnik.<br>
 International Conference on Machine Learning (ICML), 2023.<br>
