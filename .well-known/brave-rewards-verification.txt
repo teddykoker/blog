@@ -1,4 +1,0 @@
-This is a Brave Rewards publisher verification file.
-
-Domain: teddykoker.com
-Token: dc5a8c04f7f55b9d53ea852a539622d9d8d02eeb423f7421ef0262d2f20aa349

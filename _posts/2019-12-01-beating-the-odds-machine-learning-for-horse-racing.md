@@ -174,7 +174,3 @@ has likely become much more efficient with large numbers of computer
 handicappers and more detailed information available to the public.
 Nevertheless, developing a profitable model, especially with modern
 machine learning methods, may be a feasible task.
-
-Thank you for reading! For any questions regarding this post or others,
-feel free to reach out on twitter:
-[@teddykoker](https://twitter.com/teddykoker).
