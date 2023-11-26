@@ -273,5 +273,3 @@ plt.title('Receiver Operating Characteristics'); plt.legend();
 
 
 We achieved an area under the ROC curve of 0.986 (best possible being 1.0), all by adding a few layers to a pre-trained model! This example serves as a testament as to how well transfer learning applied, even on data that is very different than the original model was trained on. The best part is, the same code can be used to apply transfer learning to a completely different image classification task. Feel free to copy my [notebook]() and try it for yourself!
-
-If you liked this article, be sure to follow [@teddykoker](https://twitter.com/teddykoker), and check out my other articles. Stay tuned for my upcoming post on building and setting up your own affordable deep learning computer!

@@ -1,0 +1,18 @@
+---
+layout: default
+---
+<h2>Writing</h2>
+<a href="{{ "feed.xml" | relative_url }}">Atom (RSS) Feed</a>
+<hr>
+<ul> 
+{% for post in site.posts %}
+    {% unless post.hide %}
+        <li>
+            {{ post.date | date: '%F' }}
+            <a href="{{ post.url }}">
+                {{ post.title }}
+            </a>
+        </li>
+    {% endunless %}
+{% endfor %}
+</ul>
