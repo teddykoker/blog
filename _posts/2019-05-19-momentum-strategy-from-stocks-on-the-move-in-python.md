@@ -170,7 +170,7 @@ class Strategy(bt.Strategy):
     def rebalance_portfolio(self):
         # only look at data that we can have indicators for 
         self.rankings = list(filter(lambda d: len(d) > 100, self.stocks))
-        self.rankings.sort(key=lambda d: self.inds[d]["momentum"][0])
+        self.rankings.sort(key=lambda d: self.inds[d]["momentum"][0], reverse=True)
         num_stocks = len(self.rankings)
         
         # sell stocks based on criteria
