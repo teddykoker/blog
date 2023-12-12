@@ -20,11 +20,11 @@ Previously, I have worked at [Lightning AI](https://lightning.ai/) and [Harvard 
 I am broadly interested in machine learning and its applications to the sciences and medicine. My most recent work focuses on machine learning within the field of material science, as well as methods for domain adaptation and interpretability of time-series models.
 
 <br>
-*Higher Order Equivariant Graph Neural Networks
-for Charge Density Prediction*<br>
-Teddy Koker, Keegan Quigley,  and Lin Li.<br>
-NeurIPS AI for Science Workshop, 2023.<br>
-[PDF](https://openreview.net/pdf?id=Ap4rSgB3O1)
+*Higher-Order Equivariant Neural Networks
+for Charge Density Prediction in Materials*<br>
+Teddy Koker, Keegan Quigley, Eric Taw, Kevin Tibbetts, Lin Li.<br>
+In Review. Also at NeurIPS AI for Science Workshop, 2023.<br>
+[arXiv](https://arxiv.org/abs/2312.05388) / [Code](https://github.com/AIforGreatGood/charge3net)
 
 <br>
 *Encoding Time-Series Explanations through Self-Supervised Model Behavior Consistency*<br>
