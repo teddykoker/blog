@@ -54,7 +54,7 @@ performance in a race that is comparable across different tracks, distances, and
 going (track conditions). This provides a way to compare horses that have not
 raced under the same circumstances. After reading Beyer's book, I implemented
 his rating system on my data. For this feature, I calculated the mean speed
-figure over the horse's past 5 race the race.
+figure over the horse's past 5 races.
 
 **Last Figure**: Speed figure of the last race the horse was in.
 
