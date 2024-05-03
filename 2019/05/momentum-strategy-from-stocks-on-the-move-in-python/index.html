@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Momentum Strategy from “Stocks on the Move” in Python | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="Momentum Strategy from “Stocks on the Move” in Python" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post we will look at the momentum strategy from Andreas F. Clenow’s book Stocks on the Move: Beating the Market with Hedge Fund Momentum Strategy and backtest its performance using the survivorship bias-free dataset we created in my last post." />
+<meta property="og:description" content="In this post we will look at the momentum strategy from Andreas F. Clenow’s book Stocks on the Move: Beating the Market with Hedge Fund Momentum Strategy and backtest its performance using the survivorship bias-free dataset we created in my last post." />
+<link rel="canonical" href="https://teddykoker.com/2019/05/momentum-strategy-from-stocks-on-the-move-in-python/" />
+<meta property="og:url" content="https://teddykoker.com/2019/05/momentum-strategy-from-stocks-on-the-move-in-python/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="http://teddykoker.com/images/2019-05-19-momentum-strategy-from-stocks-on-the-move-in-python_13_0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-05-19T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"Momentum Strategy from “Stocks on the Move” in Python","dateModified":"2019-05-19T00:00:00+00:00","datePublished":"2019-05-19T00:00:00+00:00","description":"In this post we will look at the momentum strategy from Andreas F. Clenow’s book Stocks on the Move: Beating the Market with Hedge Fund Momentum Strategy and backtest its performance using the survivorship bias-free dataset we created in my last post.","url":"https://teddykoker.com/2019/05/momentum-strategy-from-stocks-on-the-move-in-python/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2019/05/momentum-strategy-from-stocks-on-the-move-in-python/"},"@type":"BlogPosting","image":"http://teddykoker.com/images/2019-05-19-momentum-strategy-from-stocks-on-the-move-in-python_13_0.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>Momentum Strategy from "Stocks on the Move" in Python</h1>
+<p>Published 2019-05-19</p>
+<hr>
+<p>In this post we will look at the momentum strategy from Andreas F. Clenow’s book <a href="https://amzn.to/2YzEIvL">Stocks on the Move: Beating the Market with Hedge Fund Momentum Strategy</a> and backtest its performance using the survivorship bias-free dataset we created in my <a href="/2019/05/creating-a-survivorship-bias-free-sp-500-dataset-with-python/">last post</a>.</p>
+
+<p>Momentum strategies are almost the opposite of mean-reversion strategies. A typical momentum strategy will buy stocks that have been showing an upward trend in hopes that the trend will continue. The momentum strategy defined in Clenow’s books trades based upon the following rules:</p>
+
+<ul>
+  <li>
+    <p>Trade once a week. In his book, Clenow trades every Wednesday, but as he notes, which day is completely arbitrary.</p>
+  </li>
+  <li>
+    <p>Rank stocks in the S&amp;P 500 based on momentum. Momentum is calculated by multiplying the annualized exponential regression slope of the past 90 days by the $R^2$ coefficient of the regression calculation.</p>
+  </li>
+  <li>
+    <p>Position size is calculated using the 20-day <a href="https://www.investopedia.com/terms/a/atr.asp">Average True Range</a> of each stock, multiplied by 10 basis points of the portfolio value.</p>
+  </li>
+  <li>
+    <p>Only open new positions if the S&amp;P 500 is above its 200-day moving average.</p>
+  </li>
+  <li>
+    <p>Every week, look to sell stocks that are not in the top 20% momentum ranking, or have fallen below their 100 day moving average. Buy stocks in the top 20% momentum rankings with remaining cash.</p>
+  </li>
+  <li>
+    <p>Every other week, rebalance existing positions with updated Average True Range values.</p>
+  </li>
+</ul>
+
+<p>Before we backtest the strategy, let’s look into the momentum and position size formulas.</p>
+
+<h2 id="momentum">Momentum</h2>
+
+<p>As mentioned above, momentum is calculated by multiplying the annualized exponential regression slope of the past 90 days by the $R^2$ coefficient of the regression calculation. To see this in action, let’s look at the highest momentum values measured in our dataset. First we’ll need to load in the dataset:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span> 
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s">"figure.figsize"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span> <span class="c1"># (w, h)
+</span><span class="n">plt</span><span class="p">.</span><span class="n">ioff</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">tickers</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">'survivorship-free/tickers.csv'</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">None</span><span class="p">)[</span><span class="mi">1</span><span class="p">].</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">stocks</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="p">(</span><span class="n">pd</span><span class="p">.</span><span class="n">concat</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s">"survivorship-free/</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s">.csv"</span><span class="p">,</span> <span class="n">index_col</span><span class="o">=</span><span class="s">'date'</span><span class="p">,</span> <span class="n">parse_dates</span><span class="o">=</span><span class="bp">True</span><span class="p">)[</span>
+            <span class="s">'close'</span>
+        <span class="p">].</span><span class="n">rename</span><span class="p">(</span><span class="n">ticker</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">tickers</span><span class="p">],</span>
+        <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">sort</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+    <span class="p">)</span>
+<span class="p">)</span>
+<span class="n">stocks</span> <span class="o">=</span> <span class="n">stocks</span><span class="p">.</span><span class="n">loc</span><span class="p">[:,</span><span class="o">~</span><span class="n">stocks</span><span class="p">.</span><span class="n">columns</span><span class="p">.</span><span class="n">duplicated</span><span class="p">()]</span>
+</code></pre></div></div>
+
+<p>Now let’s create our momentum measurement function. We can compute the exponential regression of a stock by performing linear regression on the natural log of the stock’s daily closes:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">scipy.stats</span> <span class="kn">import</span> <span class="n">linregress</span>
+<span class="k">def</span> <span class="nf">momentum</span><span class="p">(</span><span class="n">closes</span><span class="p">):</span>
+    <span class="n">returns</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="n">closes</span><span class="p">)</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">returns</span><span class="p">))</span>
+    <span class="n">slope</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">rvalue</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">linregress</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">returns</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">((</span><span class="mi">1</span> <span class="o">+</span> <span class="n">slope</span><span class="p">)</span> <span class="o">**</span> <span class="mi">252</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">rvalue</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># annualize slope and multiply by R^2
+</span></code></pre></div></div>
+
+<p>Now we can apply a rolling 90 day momentum calculation to all of the stocks in our universe:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">momentums</span> <span class="o">=</span> <span class="n">stocks</span><span class="p">.</span><span class="n">copy</span><span class="p">(</span><span class="n">deep</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">tickers</span><span class="p">:</span>
+    <span class="n">momentums</span><span class="p">[</span><span class="n">ticker</span><span class="p">]</span> <span class="o">=</span> <span class="n">stocks</span><span class="p">[</span><span class="n">ticker</span><span class="p">].</span><span class="n">rolling</span><span class="p">(</span><span class="mi">90</span><span class="p">).</span><span class="nb">apply</span><span class="p">(</span><span class="n">momentum</span><span class="p">,</span> <span class="n">raw</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Let’s look at the 5 stocks with the best momentum values and plot them along with their regression curve.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'Days'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'Stock Price'</span><span class="p">)</span>
+
+<span class="n">bests</span> <span class="o">=</span> <span class="n">momentums</span><span class="p">.</span><span class="nb">max</span><span class="p">().</span><span class="n">sort_values</span><span class="p">(</span><span class="n">ascending</span><span class="o">=</span><span class="bp">False</span><span class="p">).</span><span class="n">index</span><span class="p">[:</span><span class="mi">5</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">best</span> <span class="ow">in</span> <span class="n">bests</span><span class="p">:</span>
+    <span class="n">end</span> <span class="o">=</span> <span class="n">momentums</span><span class="p">[</span><span class="n">best</span><span class="p">].</span><span class="n">index</span><span class="p">.</span><span class="n">get_loc</span><span class="p">(</span><span class="n">momentums</span><span class="p">[</span><span class="n">best</span><span class="p">].</span><span class="n">idxmax</span><span class="p">())</span>
+    <span class="n">rets</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="n">stocks</span><span class="p">[</span><span class="n">best</span><span class="p">].</span><span class="n">iloc</span><span class="p">[</span><span class="n">end</span> <span class="o">-</span> <span class="mi">90</span> <span class="p">:</span> <span class="n">end</span><span class="p">])</span>
+    <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">rets</span><span class="p">))</span>
+    <span class="n">slope</span><span class="p">,</span> <span class="n">intercept</span><span class="p">,</span> <span class="n">r_value</span><span class="p">,</span> <span class="n">p_value</span><span class="p">,</span> <span class="n">std_err</span> <span class="o">=</span> <span class="n">linregress</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">rets</span><span class="p">)</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">180</span><span class="p">),</span> <span class="n">stocks</span><span class="p">[</span><span class="n">best</span><span class="p">][</span><span class="n">end</span><span class="o">-</span><span class="mi">90</span><span class="p">:</span><span class="n">end</span><span class="o">+</span><span class="mi">90</span><span class="p">])</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">np</span><span class="p">.</span><span class="n">e</span> <span class="o">**</span> <span class="p">(</span><span class="n">intercept</span> <span class="o">+</span> <span class="n">slope</span><span class="o">*</span><span class="n">x</span><span class="p">))</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-05-19-momentum-strategy-from-stocks-on-the-move-in-python_13_0.png" alt="png" /></p>
+
+<p>As we can see, the regression curves fit each stock pretty well; The stocks do not seem to follow the curve outside of the measurement window, but it is important to remember that this momentum indicator is only used for <em>ranking</em> the stocks, and is in no way trying to predict prices.</p>
+
+<h2 id="risk-parity-sizing">Risk Parity Sizing</h2>
+
+<p>Clenow’s strategy uses risk parity allocation to calculate the position sizes of each stock. Each stock is assigned a size using the following formula:</p>
+
+\[Size = {{AccountValue\times RiskFactor} \over {{ATR}_{20}}}\]
+
+<p>Where ${ATR}_{20}$ is a stock’s <a href="https://www.investopedia.com/terms/a/atr.asp">Average True Range</a> over the past 20 days. The risk factor, in our case, will be 10 basis points (0.1%). This means that if we assume each stock’s ATR remains similar in the future, we can expect each stock to have a daily impact of 0.1% of our portfolio. We are essentially normalizing the weights all of the stocks in our portfolio by risk.</p>
+
+<p>Now that we understand how the strategy works, let’s backtest it!</p>
+
+<h1 id="backtesting">Backtesting</h1>
+
+<p>First we’ll code the <code class="highlighter-rouge">Momentum</code> indicator and our strategy:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">backtrader</span> <span class="k">as</span> <span class="n">bt</span>
+
+<span class="k">class</span> <span class="nc">Momentum</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">Indicator</span><span class="p">):</span>
+    <span class="n">lines</span> <span class="o">=</span> <span class="p">(</span><span class="s">'trend'</span><span class="p">,)</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">((</span><span class="s">'period'</span><span class="p">,</span> <span class="mi">90</span><span class="p">),)</span>
+    
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">addminperiod</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">params</span><span class="p">.</span><span class="n">period</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">returns</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">log</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">data</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">size</span><span class="o">=</span><span class="bp">self</span><span class="p">.</span><span class="n">p</span><span class="p">.</span><span class="n">period</span><span class="p">))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">arange</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">returns</span><span class="p">))</span>
+        <span class="n">slope</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">rvalue</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">linregress</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">returns</span><span class="p">)</span>
+        <span class="n">annualized</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">slope</span><span class="p">)</span> <span class="o">**</span> <span class="mi">252</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">lines</span><span class="p">.</span><span class="n">trend</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">annualized</span> <span class="o">*</span> <span class="p">(</span><span class="n">rvalue</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+        
+        
+<span class="k">class</span> <span class="nc">Strategy</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">Strategy</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">inds</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">spy</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">datas</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">stocks</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">datas</span><span class="p">[</span><span class="mi">1</span><span class="p">:]</span>
+        
+        <span class="bp">self</span><span class="p">.</span><span class="n">spy_sma200</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">indicators</span><span class="p">.</span><span class="n">SimpleMovingAverage</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">spy</span><span class="p">.</span><span class="n">close</span><span class="p">,</span>
+                                                            <span class="n">period</span><span class="o">=</span><span class="mi">200</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">stocks</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"momentum"</span><span class="p">]</span> <span class="o">=</span> <span class="n">Momentum</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">close</span><span class="p">,</span> 
+                                                <span class="n">period</span><span class="o">=</span><span class="mi">90</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"sma100"</span><span class="p">]</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">indicators</span><span class="p">.</span><span class="n">SimpleMovingAverage</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">close</span><span class="p">,</span> 
+                                                                       <span class="n">period</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"atr20"</span><span class="p">]</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">indicators</span><span class="p">.</span><span class="n">ATR</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> 
+                                                      <span class="n">period</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prenext</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># call next() even when data is not available for all tickers
+</span>        <span class="bp">self</span><span class="p">.</span><span class="nb">next</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">i</span> <span class="o">%</span> <span class="mi">5</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">rebalance_portfolio</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">i</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">rebalance_positions</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    
+    <span class="k">def</span> <span class="nf">rebalance_portfolio</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="c1"># only look at data that we can have indicators for 
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">rankings</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">stocks</span><span class="p">))</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">rankings</span><span class="p">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"momentum"</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">reverse</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+        <span class="n">num_stocks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">rankings</span><span class="p">)</span>
+        
+        <span class="c1"># sell stocks based on criteria
+</span>        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">rankings</span><span class="p">):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">getposition</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">data</span><span class="p">).</span><span class="n">size</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">&gt;</span> <span class="n">num_stocks</span> <span class="o">*</span> <span class="mf">0.2</span> <span class="ow">or</span> <span class="n">d</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"sma100"</span><span class="p">]:</span>
+                    <span class="bp">self</span><span class="p">.</span><span class="n">close</span><span class="p">(</span><span class="n">d</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">spy</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">spy_sma200</span><span class="p">:</span>
+            <span class="k">return</span>
+        
+        <span class="c1"># buy stocks with remaining cash
+</span>        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">rankings</span><span class="p">[:</span><span class="nb">int</span><span class="p">(</span><span class="n">num_stocks</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)]):</span>
+            <span class="n">cash</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">broker</span><span class="p">.</span><span class="n">get_cash</span><span class="p">()</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">broker</span><span class="p">.</span><span class="n">get_value</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cash</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="p">.</span><span class="n">getposition</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">data</span><span class="p">).</span><span class="n">size</span><span class="p">:</span>
+                <span class="n">size</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="mf">0.001</span> <span class="o">/</span> <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"atr20"</span><span class="p">]</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">buy</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="n">size</span><span class="p">)</span>
+                
+        
+    <span class="k">def</span> <span class="nf">rebalance_positions</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">num_stocks</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">rankings</span><span class="p">)</span>
+        
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">spy</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">spy_sma200</span><span class="p">:</span>
+            <span class="k">return</span>
+
+        <span class="c1"># rebalance all stocks
+</span>        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">rankings</span><span class="p">[:</span><span class="nb">int</span><span class="p">(</span><span class="n">num_stocks</span> <span class="o">*</span> <span class="mf">0.2</span><span class="p">)]):</span>
+            <span class="n">cash</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">broker</span><span class="p">.</span><span class="n">get_cash</span><span class="p">()</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">broker</span><span class="p">.</span><span class="n">get_value</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">cash</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">break</span>
+            <span class="n">size</span> <span class="o">=</span> <span class="n">value</span> <span class="o">*</span> <span class="mf">0.001</span> <span class="o">/</span> <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"atr20"</span><span class="p">]</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">order_target_size</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">size</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>As we can see in the code, the strategy looks for stocks it needs to sell every week in the <code class="highlighter-rouge">rebalance_portfolio</code> method and rebalances all of its positions every other week in the <code class="highlighter-rouge">rebalance_positions</code> method. Now let’s run a backtest!</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cerebro</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">Cerebro</span><span class="p">(</span><span class="n">stdstats</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="p">.</span><span class="n">broker</span><span class="p">.</span><span class="n">set_coc</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="n">spy</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">feeds</span><span class="p">.</span><span class="n">YahooFinanceData</span><span class="p">(</span><span class="n">dataname</span><span class="o">=</span><span class="s">'SPY'</span><span class="p">,</span>
+                                 <span class="n">fromdate</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2012</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">28</span><span class="p">),</span>
+                                 <span class="n">todate</span><span class="o">=</span><span class="n">datetime</span><span class="p">(</span><span class="mi">2018</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">28</span><span class="p">),</span>
+                                 <span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="p">.</span><span class="n">adddata</span><span class="p">(</span><span class="n">spy</span><span class="p">)</span>  <span class="c1"># add S&amp;P 500 Index
+</span>
+<span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">tickers</span><span class="p">:</span>
+    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="sa">f</span><span class="s">"survivorship-free/</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s">.csv"</span><span class="p">,</span>
+                     <span class="n">parse_dates</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span>
+                     <span class="n">index_col</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">100</span><span class="p">:</span> <span class="c1"># data must be long enough to compute 100 day SMA
+</span>        <span class="n">cerebro</span><span class="p">.</span><span class="n">adddata</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">feeds</span><span class="p">.</span><span class="n">PandasData</span><span class="p">(</span><span class="n">dataname</span><span class="o">=</span><span class="n">df</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">False</span><span class="p">))</span>
+
+<span class="n">cerebro</span><span class="p">.</span><span class="n">addobserver</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">observers</span><span class="p">.</span><span class="n">Value</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="p">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">analyzers</span><span class="p">.</span><span class="n">SharpeRatio</span><span class="p">,</span> <span class="n">riskfreerate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="p">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">analyzers</span><span class="p">.</span><span class="n">Returns</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="p">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">analyzers</span><span class="p">.</span><span class="n">DrawDown</span><span class="p">)</span>
+<span class="n">cerebro</span><span class="p">.</span><span class="n">addstrategy</span><span class="p">(</span><span class="n">Strategy</span><span class="p">)</span>
+<span class="n">results</span> <span class="o">=</span> <span class="n">cerebro</span><span class="p">.</span><span class="n">run</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">cerebro</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iplot</span><span class="o">=</span><span class="bp">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Sharpe: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">analyzers</span><span class="p">.</span><span class="n">sharperatio</span><span class="p">.</span><span class="n">get_analysis</span><span class="p">()[</span><span class="s">'sharperatio'</span><span class="p">]:.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Norm. Annual Return: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">analyzers</span><span class="p">.</span><span class="n">returns</span><span class="p">.</span><span class="n">get_analysis</span><span class="p">()[</span><span class="s">'rnorm100'</span><span class="p">]:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Max Drawdown: </span><span class="si">{</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">analyzers</span><span class="p">.</span><span class="n">drawdown</span><span class="p">.</span><span class="n">get_analysis</span><span class="p">()[</span><span class="s">'max'</span><span class="p">][</span><span class="s">'drawdown'</span><span class="p">]:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-05-19-momentum-strategy-from-stocks-on-the-move-in-python_25_0.png" alt="png" /></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Sharpe: 1.269
+Norm. Annual Return: 8.99%
+Max Drawdown: 11.71%
+</code></pre></div></div>
+
+<p>As we can see the algorithm performs pretty well. It makes an average of almost 9% a year with a max drawdown of only 11%. Although the S&amp;P 500 slightly outperforms the algorithm over this time period (CAGR of 12%), it does so with more volatility (Max Drawdown of 13.5%, Sharpe of 1.07). Overall, this algorithm provides a good base for a momentum strategy and can likely be improved by altering parameters, applying filters, and adding leverage. I would highly recommend reading Clenow’s book <a href="https://amzn.to/2YzEIvL">Stocks on the Move: Beating the Market with Hedge Fund Momentum Strategy</a>, as it provides a much more in depth description as to how the algorithm works, as well as detailed analysis of how it has performed historically.</p>
+
+<p>If you would like to try the the strategy for yourself, you can find <a href="https://github.com/teddykoker/blog/tree/master/_notebooks">this
+notebook</a> on my
+Github, along with my <a href="https://github.com/teddykoker/quant/tree/master/survivorship-free">survivorship bias-free
+dataset</a>!</p>
+
+<hr>
+<ol class="bibliography"></ol>
+
+</div>
+</body>
+</html>
