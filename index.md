@@ -9,6 +9,7 @@ layout: page
 
 
 I am currently a machine learning researcher at [MIT Lincoln Laboratory](https://www.ll.mit.edu/), where I am a member of the [Artificial Intelligence Technology](https://www.ll.mit.edu/r-d/technology-office/artificial-intelligence-technology) group.
+I will be starting a PhD in Electrical Engineering and Computer Science at [Massachusetts Institute of Technology](https://www.eecs.mit.edu/) in September 2024.
 
 Previously, I have worked at [Lightning AI](https://lightning.ai/) and [Harvard Medical School](https://hms.harvard.edu/).
 
@@ -17,7 +18,7 @@ Previously, I have worked at [Lightning AI](https://lightning.ai/) and [Harvard 
 
 ## Research
 
-I am broadly interested in machine learning and its applications to the sciences and medicine. My most recent work focuses on machine learning within the field of material science, as well as methods for domain adaptation and interpretability of time-series models.
+I am broadly interested in machine learning and its applications to the computational sciences. My most recent work focuses on deep learning within the field of computational materials science.
 
 <br>
 *Higher-Order Equivariant Neural Networks
