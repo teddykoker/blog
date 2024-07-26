@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Learning to Learn with JAX | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="Learning to Learn with JAX" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Gradient-descent-based optimizers have long been used as the optimization algorithm of choice for deep learning models. Over the years, various modifications to the basic mini-batch gradient descent have been proposed, such as adding momentum or Nesterov’s Accelerated Gradient (Sutskever et al., 2013), as well as the popular Adam optimizer (Kingma &amp; Ba, 2014). The paper Learning to Learn by Gradient Descent by Gradient Descent (Andrychowicz et al., 2016) demonstrates how the optimizer itself can be replaced with a simple neural network, which can be trained end-to-end. In this post, we will see how JAX, a relatively new Python library for numerical computing, can be used to implement a version of the optimizer introduced in the paper." />
+<meta property="og:description" content="Gradient-descent-based optimizers have long been used as the optimization algorithm of choice for deep learning models. Over the years, various modifications to the basic mini-batch gradient descent have been proposed, such as adding momentum or Nesterov’s Accelerated Gradient (Sutskever et al., 2013), as well as the popular Adam optimizer (Kingma &amp; Ba, 2014). The paper Learning to Learn by Gradient Descent by Gradient Descent (Andrychowicz et al., 2016) demonstrates how the optimizer itself can be replaced with a simple neural network, which can be trained end-to-end. In this post, we will see how JAX, a relatively new Python library for numerical computing, can be used to implement a version of the optimizer introduced in the paper." />
+<link rel="canonical" href="https://teddykoker.com/2022/04/learning-to-learn-jax/" />
+<meta property="og:url" content="https://teddykoker.com/2022/04/learning-to-learn-jax/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/lstm_opt.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2022-04-28T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"Learning to Learn with JAX","dateModified":"2022-04-28T00:00:00+00:00","datePublished":"2022-04-28T00:00:00+00:00","description":"Gradient-descent-based optimizers have long been used as the optimization algorithm of choice for deep learning models. Over the years, various modifications to the basic mini-batch gradient descent have been proposed, such as adding momentum or Nesterov’s Accelerated Gradient (Sutskever et al., 2013), as well as the popular Adam optimizer (Kingma &amp; Ba, 2014). The paper Learning to Learn by Gradient Descent by Gradient Descent (Andrychowicz et al., 2016) demonstrates how the optimizer itself can be replaced with a simple neural network, which can be trained end-to-end. In this post, we will see how JAX, a relatively new Python library for numerical computing, can be used to implement a version of the optimizer introduced in the paper.","url":"https://teddykoker.com/2022/04/learning-to-learn-jax/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2022/04/learning-to-learn-jax/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/lstm_opt.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>Learning to Learn with JAX</h1>
+<p>Published 2022-04-28</p>
+<hr>
+<p>Gradient-descent-based optimizers have long been used as the optimization
+algorithm of choice for deep learning models. Over the years, various
+modifications to the basic mini-batch gradient descent have been proposed, such
+as adding momentum or Nesterov’s Accelerated Gradient <a class="citation" href="#sutskever2013importance">(Sutskever et al., 2013)</a>, as well as the popular Adam optimizer <a class="citation" href="#kingma2014adam">(Kingma &amp; Ba, 2014)</a>. The paper <em>Learning to Learn by
+Gradient Descent by Gradient Descent</em> <a class="citation" href="#andrychowicz2016learning">(Andrychowicz et al., 2016)</a>
+demonstrates how the optimizer itself can be replaced with a simple neural
+network, which can be trained end-to-end. In this post, we will see how
+<a href="https://github.com/google/jax">JAX</a>, a relatively new Python library for
+numerical computing, can be used to implement a version of the optimizer
+introduced in the paper.</p>
+
+<h2 id="the-task-quadratic-functions">The Task: Quadratic Functions</h2>
+
+<p>While many tasks can be used, for simplicity and compute we’ll use the
+<em>Quadratic functions</em> task from the original paper <a class="citation" href="#andrychowicz2016learning">(Andrychowicz et al., 2016)</a>:</p>
+
+<blockquote>
+  <p>In particular we consider minimizing functions of the form</p>
+
+\[f(\theta) = \lVert W\theta -y \rVert^2_2\]
+
+  <p>for different 10x10 matrices W and 10-dimensional vectors y whose elements are
+drawn from an IID Gaussian distribution.</p>
+</blockquote>
+
+<p>Typically you would optimize parameters $\theta$, by repeatedly updating them
+with some values, $g_t$, obtained by your optimizer:</p>
+
+\[\theta_{t+1} = \theta_t + g_t\]
+
+<p>The optimizer, $g(\cdot)$ will usually computes this update using the gradients
+$\nabla f(\theta)$, as well as potentially some state, $h_t$:</p>
+
+\[[g_t, h_{t+1}] = g(\nabla f(\theta_t), h_t)\]
+
+<h2 id="sgd">SGD</h2>
+
+<p>In the case of stochastic gradient descent (SGD), this function is very simple,
+with no state necessary; the update is computed simply as the negative product
+of the gradient and the learning rate, $\alpha$ in this case:</p>
+
+\[g_t = - \alpha \cdot \nabla f(\theta_t)\]
+
+<p>In Python we could write this as:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="k">def</span> <span class="nf">sgd</span><span class="p">(</span><span class="n">gradients</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="k">return</span> <span class="o">-</span><span class="n">learning_rate</span> <span class="o">*</span> <span class="n">gradients</span><span class="p">,</span> <span class="n">state</span>
+</code></pre></div></div>
+
+<p>We’ll see that the <code class="highlighter-rouge">state</code> variable is not modified, but we’ll keep it to be
+consistent with our framework. <em>Note: learning rates have been searched over
+log-space for optimal final loss.</em></p>
+
+<p>Now that we have our framework for optimization defined, we can implement it
+with JAX:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">quadratic_task</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">opt_fn</span><span class="p">,</span> <span class="n">opt_state</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">100</span><span class="p">):</span>
+    <span class="o">@</span><span class="n">jax</span><span class="p">.</span><span class="n">jit</span>
+    <span class="k">def</span> <span class="nf">f</span><span class="p">(</span><span class="n">theta</span><span class="p">):</span>
+        <span class="n">product</span> <span class="o">=</span> <span class="n">jax</span><span class="p">.</span><span class="n">vmap</span><span class="p">(</span><span class="n">jnp</span><span class="p">.</span><span class="n">matmul</span><span class="p">)(</span><span class="n">w</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">jnp</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="n">jnp</span><span class="p">.</span><span class="nb">sum</span><span class="p">((</span><span class="n">product</span> <span class="o">-</span> <span class="n">y</span><span class="p">)</span> <span class="o">**</span> <span class="mi">2</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">))</span>
+
+    <span class="n">losses</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">steps</span><span class="p">):</span>
+        <span class="n">loss</span><span class="p">,</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">jax</span><span class="p">.</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">f</span><span class="p">)(</span><span class="n">theta</span><span class="p">)</span>
+        <span class="n">updates</span><span class="p">,</span> <span class="n">opt_state</span> <span class="o">=</span> <span class="n">opt_fn</span><span class="p">(</span><span class="n">grads</span><span class="p">,</span> <span class="n">opt_state</span><span class="p">)</span>
+        <span class="n">theta</span> <span class="o">+=</span> <span class="n">updates</span>
+        <span class="n">losses</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">loss</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">jnp</span><span class="p">.</span><span class="n">stack</span><span class="p">(</span><span class="n">losses</span><span class="p">),</span> <span class="n">theta</span><span class="p">,</span> <span class="n">opt_state</span>
+</code></pre></div></div>
+
+<p><code class="highlighter-rouge">quadratic_task</code> takes our three variables $w$, $y$, and $\theta$, as well as an
+optimizer function, <code class="highlighter-rouge">opt_fn()</code> and <code class="highlighter-rouge">opt_state</code>. The gradients of function <code class="highlighter-rouge">f()</code>
+are computed, then passed to the <code class="highlighter-rouge">opt_fn()</code>, which then produces the updates and
+the next state.</p>
+
+<p>There are a couple JAX specific things going on:</p>
+<ul>
+  <li><code class="highlighter-rouge">jax.vmap(jnp.matmul)</code> performs the matrix multiply operation, automatically
+  vectorizing over the batch dimension</li>
+  <li><code class="highlighter-rouge">jax.value_and_grad</code> computes the output of a function along with the gradient
+  of that output with respect to its input.</li>
+  <li><code class="highlighter-rouge">@jax.jit</code> will perform a just-in-time compilation of the function it is
+  wrapping using the <a href="https://www.tensorflow.org/xla">XLA</a> compiler, which
+  will optimizer the code for whatever device you are using.</li>
+</ul>
+
+<p>We can see this in action by generating a dataset of $w$, $y$, and $\theta$, and
+optimizing $\theta$ with the <code class="highlighter-rouge">sgd</code> function we defined above:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">batch_size</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">rng</span> <span class="o">=</span> <span class="n">random</span><span class="p">.</span><span class="n">PRNGKey</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">keys</span> <span class="o">=</span> <span class="n">random</span><span class="p">.</span><span class="n">split</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span>
+<span class="n">w</span> <span class="o">=</span> <span class="n">random</span><span class="p">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">y</span> <span class="o">=</span> <span class="n">random</span><span class="p">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+<span class="n">theta</span> <span class="o">=</span> <span class="n">random</span><span class="p">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+<span class="n">losses</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">quadratic_task</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">opt_fn</span><span class="o">=</span><span class="n">sgd</span><span class="p">,</span> <span class="n">opt_state</span><span class="o">=</span><span class="bp">None</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Plotting <code class="highlighter-rouge">losses</code> we’ll see that, as expected, $f(\theta)$ is minimized over
+time:</p>
+
+<p><img src="/images/sgd_new.png" alt="sgd loss plot" /></p>
+
+<h2 id="adam">Adam</h2>
+
+<p>While simple SGD often works well for gradient-based optimization, Adam <a class="citation" href="#kingma2014adam">(Kingma &amp; Ba, 2014)</a> is another popular choice, which works by maintaining a moving average of the
+gradient and squared gradient (referred to as the 1st and 2nd moments). While we
+could implement this ourself, <a href="https://github.com/deepmind/optax">Optax</a> has
+implemented a JAX version of the optimizer that we can use in a similar manor:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">adam</span> <span class="o">=</span> <span class="n">optax</span><span class="p">.</span><span class="n">adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">1.0</span><span class="p">)</span>
+<span class="n">losses</span><span class="p">,</span> <span class="o">*</span><span class="n">_</span> <span class="o">=</span> <span class="n">quadratic_task</span><span class="p">(</span>
+    <span class="n">w</span><span class="p">,</span>
+    <span class="n">y</span><span class="p">,</span>
+    <span class="n">theta</span><span class="p">,</span>
+    <span class="n">opt_fn</span><span class="o">=</span><span class="n">adam</span><span class="p">.</span><span class="n">update</span><span class="p">,</span>
+    <span class="n">opt_state</span><span class="o">=</span><span class="n">adam</span><span class="p">.</span><span class="n">init</span><span class="p">(</span><span class="n">theta</span><span class="p">),</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<p>Optax provides a function <code class="highlighter-rouge">adam.update()</code>, which will output the next optimizer
+state $h_{t+1}$ and parameter updates $g_t$, as well as the <code class="highlighter-rouge">adam.init()</code>
+function which will provide the initial state of the optimizer.</p>
+
+<p>We can then plot the losses against losses from SGD.</p>
+
+<p><img src="/images/sgd_adam.png" alt="sgd loss plot" /></p>
+
+<p>In this case we’ll see that Adam converges faster, and with a lower loss than
+SGD — but can we do better?</p>
+
+<h2 id="meta-learning-an-optimizer">Meta-learning an Optimizer</h2>
+
+<p>Looking on back on our formulation for an optimizer:</p>
+
+\[[g_t, h_{t+1}] = g(\nabla f(\theta_t), h_t)\]
+
+<p>We’ll recall that our optimizer function $g(\cdot)$ produces the parameter
+updates and next state, provided an input and the current state. What kind of
+neural network does this remind us of? A recurrent one of course! Instead of
+using an existing optimizer, we can use a recurrent neural network $m(\cdot)$
+with its own parameters $\phi$:</p>
+
+\[[g_t, h_{t+1}] = m(\nabla f(\theta_t), h_t, \phi)\]
+
+<div class="figure">
+    <img src="/images/lstm_opt_graph.png" style="width: 80%; display: block; margin: 0 auto;" />
+    <div class="caption">
+        Figure 2. from <i>Learning to Learn by
+Gradient Descent by Gradient Descent</i> <a class="citation" href="#andrychowicz2016learning">(Andrychowicz et al., 2016)</a>.
+Computational graph used for computing the gradient of the optimizer.
+Gradients on dashed lines are dropped. </div>
+</div>
+
+<p>We can implement our own optimizer model as a two-layer LSTM using
+<a href="https://github.com/google/flax">Flax</a>:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">flax</span> <span class="kn">import</span> <span class="n">linen</span> <span class="k">as</span> <span class="n">nn</span>
+
+<span class="k">class</span> <span class="nc">LSTMOptimizer</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="n">hidden_units</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">20</span>
+
+    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">lstm1</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">recurrent</span><span class="p">.</span><span class="n">LSTMCell</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">lstm2</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">recurrent</span><span class="p">.</span><span class="n">LSTMCell</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">fc</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">gradient</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+        <span class="c1"># gradients of optimizee do not depend on optimizer
+</span>        <span class="n">gradient</span> <span class="o">=</span> <span class="n">jax</span><span class="p">.</span><span class="n">lax</span><span class="p">.</span><span class="n">stop_gradient</span><span class="p">(</span><span class="n">gradient</span><span class="p">)</span>
+
+        <span class="c1"># expand parameter dimension to extra batch dimension so that network
+</span>        <span class="c1"># is "coodinatewise"
+</span>        <span class="n">gradient</span> <span class="o">=</span> <span class="n">gradient</span><span class="p">[...,</span> <span class="bp">None</span><span class="p">]</span>
+
+        <span class="n">carry1</span><span class="p">,</span> <span class="n">carry2</span> <span class="o">=</span> <span class="n">state</span>
+        <span class="n">carry1</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">lstm1</span><span class="p">(</span><span class="n">carry1</span><span class="p">,</span> <span class="n">gradient</span><span class="p">)</span>
+        <span class="n">carry2</span><span class="p">,</span> <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">lstm2</span><span class="p">(</span><span class="n">carry2</span><span class="p">,</span> <span class="n">x</span><span class="p">)</span>
+        <span class="n">update</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">fc</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="n">update</span> <span class="o">=</span> <span class="n">update</span><span class="p">[...,</span> <span class="mi">0</span><span class="p">]</span>  <span class="c1"># remove last dimension
+</span>        <span class="k">return</span> <span class="n">update</span><span class="p">,</span> <span class="p">(</span><span class="n">carry1</span><span class="p">,</span> <span class="n">carry2</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">init_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rng</span><span class="p">,</span> <span class="n">params</span><span class="p">):</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">nn</span><span class="p">.</span><span class="n">LSTMCell</span><span class="p">.</span><span class="n">initialize_carry</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">params</span><span class="p">.</span><span class="n">shape</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">hidden_units</span><span class="p">),</span>
+            <span class="n">nn</span><span class="p">.</span><span class="n">LSTMCell</span><span class="p">.</span><span class="n">initialize_carry</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">params</span><span class="p">.</span><span class="n">shape</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">hidden_units</span><span class="p">),</span>
+        <span class="p">)</span>
+</code></pre></div></div>
+
+<p>With the optimizer model established, we must now figure out how to train it. We
+can define a “meta-loss”, which we define as the expected sum of all of the
+inner losses:</p>
+
+\[\mathcal{L}(\phi) = \mathbb{E}\left[\sum_t f(\theta_t)\right]\]
+
+<p>In this way, if a model is to achieve a small $\mathcal{L}(\phi)$, it must
+minimize $f(\theta_t)$ as much and as quickly as possible. The meta-model’s
+parameters $\phi$ can then be optimized with $\nabla \mathcal{L}(\phi)$, which
+is luckily easy to compute with JAX. First we must initialize our model:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c1"># example gradients of theta
+</span><span class="n">example_input</span> <span class="o">=</span> <span class="n">jnp</span><span class="p">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+
+<span class="n">lstm_opt</span> <span class="o">=</span> <span class="n">LSTMOptimizer</span><span class="p">()</span>
+<span class="n">lstm_state</span> <span class="o">=</span> <span class="n">lstm_opt</span><span class="p">.</span><span class="n">init_state</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">example_input</span><span class="p">)</span>
+<span class="n">params</span> <span class="o">=</span> <span class="n">lstm_opt</span><span class="p">.</span><span class="n">init</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">example_input</span><span class="p">,</span> <span class="n">lstm_state</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Then we define our meta-optimizer, i.e. the optimizer we are using to optimize
+the optimizer. In this case we’ll use Adam:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">meta_opt</span> <span class="o">=</span> <span class="n">optax</span><span class="p">.</span><span class="n">adam</span><span class="p">(</span><span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.01</span><span class="p">)</span>
+<span class="n">meta_opt_state</span> <span class="o">=</span> <span class="n">meta_opt</span><span class="p">.</span><span class="n">init</span><span class="p">(</span><span class="n">params</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Next, we’ll define a single train step, which will train 20 steps of the
+original quadratic task, using the LSTM model as the optimizer. Although we
+will eventually optimize for the full 100 steps, we will train over shorter
+subsequences (effectively truncated backprogagation through time) for stability.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="n">jax</span><span class="p">.</span><span class="n">jit</span>
+<span class="k">def</span> <span class="nf">train_step</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">state</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">loss_fn</span><span class="p">(</span><span class="n">params</span><span class="p">):</span>
+        <span class="n">update</span> <span class="o">=</span> <span class="n">partial</span><span class="p">(</span><span class="n">lstm_opt</span><span class="p">.</span><span class="nb">apply</span><span class="p">,</span> <span class="n">params</span><span class="p">)</span>
+        <span class="n">losses</span><span class="p">,</span> <span class="n">theta_</span><span class="p">,</span> <span class="n">state_</span> <span class="o">=</span> <span class="n">quadratic_task</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">update</span><span class="p">,</span> <span class="n">state</span><span class="p">,</span> <span class="n">steps</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">losses</span><span class="p">.</span><span class="nb">sum</span><span class="p">(),</span> <span class="p">(</span><span class="n">theta_</span><span class="p">,</span> <span class="n">state_</span><span class="p">)</span>
+
+    <span class="p">(</span><span class="n">loss</span><span class="p">,</span> <span class="p">(</span><span class="n">theta_</span><span class="p">,</span> <span class="n">state_</span><span class="p">)),</span> <span class="n">grads</span> <span class="o">=</span> <span class="n">jax</span><span class="p">.</span><span class="n">value_and_grad</span><span class="p">(</span><span class="n">loss_fn</span><span class="p">,</span> <span class="n">has_aux</span><span class="o">=</span><span class="bp">True</span><span class="p">)(</span><span class="n">params</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">loss</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">theta_</span><span class="p">,</span> <span class="n">state_</span>
+</code></pre></div></div>
+
+<p>Note that we can simply pass the <code class="highlighter-rouge">apply()</code> function of the LSTM as the quadratic
+tasks’s update function, and then we can compute the gradients of the LSTM’s
+parameters, <code class="highlighter-rouge">params</code>, with respect to the sum of the inner losses. JAX makes it
+very easy to do this because of its functional nature; doing something like this
+in PyTorch would be more difficult.</p>
+
+<p>Now all we have to do is repeatedly update to the parameters to the LSTM
+optimizer using its gradients with the meta-optimizer:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">for</span> <span class="n">step</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1000</span><span class="p">):</span>
+    <span class="n">rng</span><span class="p">,</span> <span class="o">*</span><span class="n">keys</span> <span class="o">=</span> <span class="n">jax</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">split</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="mi">4</span><span class="p">)</span>
+    <span class="n">w</span> <span class="o">=</span> <span class="n">jax</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">y</span> <span class="o">=</span> <span class="n">jax</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">jax</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">normal</span><span class="p">(</span><span class="n">keys</span><span class="p">[</span><span class="mi">2</span><span class="p">],</span> <span class="p">(</span><span class="n">batch_size</span><span class="p">,</span> <span class="mi">10</span><span class="p">))</span>
+    <span class="n">lstm_state</span> <span class="o">=</span> <span class="n">lstm_opt</span><span class="p">.</span><span class="n">initialize_carry</span><span class="p">(</span><span class="n">rng</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">unrolls</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">5</span><span class="p">):</span>
+        <span class="n">loss</span><span class="p">,</span> <span class="n">grads</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">lstm_state</span> <span class="o">=</span> <span class="n">train_step</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">w</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">lstm_state</span><span class="p">)</span>
+        <span class="n">updates</span><span class="p">,</span> <span class="n">meta_opt_state</span> <span class="o">=</span> <span class="n">meta_opt</span><span class="p">.</span><span class="n">update</span><span class="p">(</span><span class="n">grads</span><span class="p">,</span> <span class="n">meta_opt_state</span><span class="p">)</span>
+        <span class="n">params</span> <span class="o">=</span> <span class="n">optax</span><span class="p">.</span><span class="n">apply_updates</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">updates</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>For each of the 1000 steps, we randomly sample a new $w$, $y$, and
+$\theta$. We then perform 5 unrolls, each of which optimizes $\theta$ for 20 steps
+in the <code class="highlighter-rouge">train_step</code> we defined above. For each unroll we use the computed
+gradients to update the LSTM parameters with the meta-optimizer.</p>
+
+<h2 id="evaluation">Evaluation</h2>
+
+<p>With the LSTM optimizer trained, we can now evaluate it on our original
+quadratic task, and compare it to SGD, Adam, as well as RMSprop and Nesterov’s
+accelerated gradient (NAG):</p>
+
+<p><img src="/images/lstm_opt.png" alt="lstm loss plot with other optimizers" /></p>
+
+<p>Our LSTM optimizer has learned to out-perform the other hand crafted optimizers
+for the quadratic functions task! The original work goes on to demonstrate
+training and evaluating the optimizer on other tasks, including MNIST, CIFAR-10,
+and style transfer, which can be done in the same way we built
+<code class="highlighter-rouge">quadratic_task()</code>.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>In this post we learned how meta-learned optimizers can be trained via gradient
+descent, and how to implement one while leveraging JAX as well as other
+libraries in the JAX ecosystem. A more-organized version of this code including
+everything to reproduce the figures in this post can be found here:</p>
+
+<p><a href="https://github.com/teddykoker/learning-to-learn-jax">github.com/teddykoker/learning-to-learn-jax</a></p>
+
+
+<hr>
+<ol class="bibliography"><li><span id="sutskever2013importance">Sutskever, I., Martens, J., Dahl, G., &amp; Hinton, G. (2013). On the importance of initialization and momentum in deep learning. <i>International Conference on Machine Learning</i>, 1139–1147.</span></li>
+<li><span id="kingma2014adam">Kingma, D. P., &amp; Ba, J. (2014). Adam: A method for stochastic optimization. <i>ArXiv Preprint ArXiv:1412.6980</i>.</span></li>
+<li><span id="andrychowicz2016learning">Andrychowicz, M., Denil, M., Gomez, S., Hoffman, M. W., Pfau, D., Schaul, T., Shillingford, B., &amp; De Freitas, N. (2016). Learning to learn by gradient descent by gradient descent. <i>Advances in Neural Information Processing Systems</i>, <i>29</i>.</span></li></ol>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,503 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>NLP from Scratch: Annotated Attention | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="NLP from Scratch: Annotated Attention" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="This post is the first in a series of articles about natural language processing (NLP), a subfield of machine learning concerning the interaction between computers and human language. This article will be focused on attention, a mechanism that forms the backbone of many state-of-the art language models, including Google’s BERT (Devlin et al., 2018), and OpenAI’s GPT-2 (Radford et al., 2019)." />
+<meta property="og:description" content="This post is the first in a series of articles about natural language processing (NLP), a subfield of machine learning concerning the interaction between computers and human language. This article will be focused on attention, a mechanism that forms the backbone of many state-of-the art language models, including Google’s BERT (Devlin et al., 2018), and OpenAI’s GPT-2 (Radford et al., 2019)." />
+<link rel="canonical" href="https://teddykoker.com/2020/02/nlp-from-scratch-annotated-attention/" />
+<meta property="og:url" content="https://teddykoker.com/2020/02/nlp-from-scratch-annotated-attention/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/2020-02-25-nlp-from-scratch-annotated-attention_34_0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-02-25T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"NLP from Scratch: Annotated Attention","dateModified":"2020-02-25T00:00:00+00:00","datePublished":"2020-02-25T00:00:00+00:00","description":"This post is the first in a series of articles about natural language processing (NLP), a subfield of machine learning concerning the interaction between computers and human language. This article will be focused on attention, a mechanism that forms the backbone of many state-of-the art language models, including Google’s BERT (Devlin et al., 2018), and OpenAI’s GPT-2 (Radford et al., 2019).","url":"https://teddykoker.com/2020/02/nlp-from-scratch-annotated-attention/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2020/02/nlp-from-scratch-annotated-attention/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/2020-02-25-nlp-from-scratch-annotated-attention_34_0.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>NLP from Scratch: Annotated Attention</h1>
+<p>Published 2020-02-25</p>
+<hr>
+<p>This post is the first in a series of articles about <a href="https://en.wikipedia.org/wiki/Natural_language_processing">natural language processing</a> (NLP), a subfield of machine learning concerning the interaction between computers and human language. This article will be focused on <em>attention</em>, a mechanism that forms the backbone of many state-of-the art language models, including Google’s BERT (<a href="https://arxiv.org/abs/1810.04805">Devlin et al., 2018</a>), and OpenAI’s GPT-2 (<a href="https://openai.com/blog/better-language-models/">Radford et al., 2019</a>).</p>
+
+<p><a href="https://colab.research.google.com/github/teddykoker/blog/blob/master/_notebooks/2020-02-25-nlp-from-scratch-annotated-attention.ipynb"><img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab" /></a></p>
+
+<p>First introduced in the paper <em>Neural Machine Translation by Jointly Learning to Align and Translate</em> (<a href="https://arxiv.org/abs/1409.0473">Bahdanau et al., 2014</a>), attention was an improvement to the classic sequence-to-sequence model for language translation. Instead of trying to decode a translated sentence from single fixed-length vector encoding of the source sentence, the attention mechanism aims to create an alignment between the source words and target words. This alignment allows the model to take all of the source words into account when predicting each target word.</p>
+
+<p>The next two sections of this post will consist of portions of the paper <em>Effective Approaches to Attention-based Neural Machine Translation</em> (<a href="https://arxiv.org/abs/1508.04025">Luong et al., 2015</a>) along with my own comments and code in blockquotes.</p>
+
+<blockquote>
+  <p>Before continuing, it is important to have an understanding of LSTM networks. <a href="https://colah.github.io/posts/2015-08-Understanding-LSTMs/">Here</a> is a great resource. The format of this post was inspired by <a href="https://nlp.seas.harvard.edu/2018/04/03/attention.html">The Annotated Transformer</a>.</p>
+</blockquote>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">torch.nn</span> <span class="k">as</span> <span class="n">nn</span>
+<span class="kn">import</span> <span class="nn">torch.nn.functional</span> <span class="k">as</span> <span class="n">F</span>
+<span class="kn">import</span> <span class="nn">random</span>
+<span class="kn">from</span> <span class="nn">tqdm.notebook</span> <span class="kn">import</span> <span class="n">tqdm</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">matplotlib.ticker</span> <span class="k">as</span> <span class="n">ticker</span>
+</code></pre></div></div>
+
+<h2 id="attention-based-models">Attention-based Models</h2>
+
+<p>Our various attention-based models are classified
+into two broad categories, global and local. These
+classes differ in terms of whether the “attention”
+is placed on all source positions or on only a few
+source positions. We illustrate these two model
+types in Figure 2 and 3 respectively.</p>
+
+<p>Common to these two types of models is the fact
+that at each time step $t$ in the decoding phase, both
+approaches first take as input the hidden state $h_t$
+at the top layer of a stacking LSTM. The goal is
+then to derive a context vector $c_t$
+that captures relevant source-side information to help predict the
+current target word $y_t$. While these models differ
+in how the context vector $c_t$
+is derived, they share
+the same subsequent steps.
+Specifically, given the target hidden state $h_t$ and
+the source-side context vector $c_t$, we employ a
+simple concatenation layer to combine the information from both vectors:</p>
+
+\[\tilde{h_t} = \tanh(W_c[c_t;h_t])\]
+
+<p>The attentional vector $\tilde{h_t}$
+is then fed through the
+softmax layer to produce the predictive distribution formulated as:</p>
+
+\[p(y_t | y_{\lt t}, x) = \text{softmax}(W_s\tilde{h_t})\]
+
+<p>The attentional vector $\tilde{h_t}$
+is then fed through the
+softmax layer to produce the predictive distribution formulated as:</p>
+
+<blockquote>
+  <p>With this information we can implement the decoder portion of our model, leaving the context vector $c_t$ to be calculated by our (not yet written) <code class="highlighter-rouge">Attention</code> module.</p>
+</blockquote>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Decoder</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="s">"""
+    Decode output from hidden state and context
+    """</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">dropout</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Decoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">).</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">output_dim</span> <span class="o">=</span> <span class="n">output_dim</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">output_dim</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">)</span>
+        <span class="c1"># stacking LSTM
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">lstm</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">LSTM</span><span class="p">(</span><span class="n">embed_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">attention</span> <span class="o">=</span> <span class="n">Attention</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">)</span> <span class="c1"># we'll get to later
+</span>        <span class="bp">self</span><span class="p">.</span><span class="n">wc</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">ws</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">output_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span>
+        
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">trg</span><span class="p">,</span> <span class="n">hidden</span><span class="p">,</span> <span class="n">encoder_out</span><span class="p">):</span>
+        <span class="n">trg</span> <span class="o">=</span> <span class="n">trg</span><span class="p">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">embed</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">dropout</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">embed</span><span class="p">(</span><span class="n">trg</span><span class="p">))</span>
+        <span class="n">decoder_out</span><span class="p">,</span> <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">lstm</span><span class="p">(</span><span class="n">embed</span><span class="p">,</span> <span class="n">hidden</span><span class="p">)</span>
+        
+        <span class="c1"># we'll go over how these are computed later
+</span>        <span class="n">atten</span><span class="p">,</span> <span class="n">context</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">attention</span><span class="p">(</span><span class="n">decoder_out</span><span class="p">,</span> <span class="n">encoder_out</span><span class="p">)</span>
+        
+        <span class="c1"># "We employ a simple concatenation layer to combine the 
+</span>        <span class="c1"># information from both vectors:"
+</span>        <span class="n">atten_hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">wc</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">cat</span><span class="p">((</span><span class="n">decoder_out</span><span class="p">,</span> <span class="n">context</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)).</span><span class="n">tanh</span><span class="p">()</span>
+
+        <span class="c1"># "The attentional vector ~h_t is then fed through the softmax layer
+</span>        <span class="c1"># to produce the predictive distribution:"
+</span>        <span class="n">out</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">ws</span><span class="p">(</span><span class="n">atten_hidden</span><span class="p">.</span><span class="n">squeeze</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span>
+        <span class="c1"># softmax will be included in loss function
+</span>        
+        <span class="k">return</span> <span class="n">out</span><span class="p">,</span> <span class="n">hidden</span><span class="p">,</span> <span class="n">atten</span>
+</code></pre></div></div>
+
+<p>We now detail how each model type computes
+the source-side context vector $c_t$.</p>
+
+<p><img src="/images/global_attention.png" alt="" /></p>
+
+<p>Figure 2: <strong>Global attentional model</strong> - at each time
+step $t$, the model infers a variable-length alignment weight vector $a_t$ based on the current target
+state $h_t$ and all source states $\overline{h}_s$. A global context vector $c_t$
+is then computed as the weighted average, according to $a_t$, over all the source state</p>
+
+<h2 id="global-attention">Global Attention</h2>
+
+<p>The idea of a global attentional model is to consider all the hidden states of the encoder when deriving the context vector $c_t$. In this model type, a variable-length alignment vector $a_t$, whose size
+equals the number of time steps on the source side,
+is derived by comparing the current target hidden
+state $h_t$ with each source hidden state $\overline{h}_s$:</p>
+
+\[a_t(s)=\text{align}(h_t, \overline{h}_s)\]
+
+\[=\frac{\exp(\text{score}(h_t, \overline{h}_s))}{\sum_{s'}\exp(\text{score}(h_t, \overline{h}_{s'}))}\]
+
+<p>Here, $\text{score}$ is referred as a content-based function
+for which we consider three different alternatives:</p>
+
+\[\text{score}(h_t, \overline{h}_s)\!=\!\begin{cases}
+    h_t^\top \overline{h}_s &amp; dot\\
+    h_t^\top W_a \overline{h}_s &amp; general\\
+    v_a^\top \tanh(W_a[h_t;\overline{h}_s]) &amp; concat
+\end{cases}\]
+
+<p>Given the alignment vector as weights, the context
+vector $c_t$ is computed as the weighted average over
+all the source hidden states.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Attention</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="s">"""
+    Compute alignment vector and context vector from hidden states
+    """</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">score_fn</span><span class="o">=</span><span class="s">"general"</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Attention</span><span class="p">,</span> <span class="bp">self</span><span class="p">).</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">score_fn</span> <span class="o">=</span> <span class="n">score_fn</span>
+        <span class="k">if</span> <span class="n">score_fn</span> <span class="o">==</span> <span class="s">"general"</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">score_fn</span> <span class="o">==</span> <span class="s">"concat"</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">w</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">hidden_dim</span> <span class="o">*</span> <span class="mi">2</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">v</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">Parameter</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">FloatTensor</span><span class="p">(</span><span class="n">hidden_dim</span><span class="p">))</span>
+            
+    <span class="k">def</span> <span class="nf">score</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_out</span><span class="p">,</span> <span class="n">encoder_outs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">score_fn</span> <span class="o">==</span> <span class="s">"dot"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="nb">sum</span><span class="p">(</span><span class="n">decoder_out</span> <span class="o">*</span> <span class="n">encoder_outs</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">score_fn</span> <span class="o">==</span> <span class="s">"general"</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="nb">sum</span><span class="p">(</span><span class="n">decoder_out</span> <span class="o">*</span> <span class="bp">self</span><span class="p">.</span><span class="n">w</span><span class="p">(</span><span class="n">encoder_outs</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">score_fn</span> <span class="o">==</span> <span class="s">"concat"</span><span class="p">:</span>
+            <span class="n">decoder_outs</span> <span class="o">=</span> <span class="n">decoder_out</span><span class="p">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">encoder_outs</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">cat</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">cat</span><span class="p">((</span><span class="n">decoder_outs</span><span class="p">,</span> <span class="n">encoder_outs</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">torch</span><span class="p">.</span><span class="nb">sum</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">v</span> <span class="o">*</span> <span class="bp">self</span><span class="p">.</span><span class="n">w</span><span class="p">(</span><span class="n">cat</span><span class="p">),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+            
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decoder_out</span><span class="p">,</span> <span class="n">encoder_outs</span><span class="p">):</span>
+        <span class="n">score</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">score</span><span class="p">(</span><span class="n">decoder_out</span><span class="p">,</span> <span class="n">encoder_outs</span><span class="p">)</span>
+        <span class="n">a</span> <span class="o">=</span> <span class="n">F</span><span class="p">.</span><span class="n">softmax</span><span class="p">(</span><span class="n">score</span><span class="p">,</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+            
+        <span class="c1"># "Given the alignment vector as weights, the context vector 
+</span>        <span class="c1"># c_t is computed as the weighted average over all the source 
+</span>        <span class="c1"># hidden states:"
+</span>        <span class="n">context</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">bmm</span><span class="p">(</span>
+            <span class="n">a</span><span class="p">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+            <span class="n">encoder_outs</span><span class="p">.</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="p">).</span><span class="n">transpose</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">a</span><span class="p">,</span> <span class="n">context</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>We implemented an attention model that can perform each of the three $\text{score}$ functions depending on the parameter <code class="highlighter-rouge">score_fn</code>. <em>Note: for brevity, we have skipped over the local attention portion of the paper</em>. With the <code class="highlighter-rouge">Attention</code> and <code class="highlighter-rouge">Decoder</code> modules complete, all we need now is a simple encoder, consisting of some stacked LSTMs and a model that puts all of the modules together:</p>
+</blockquote>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Encoder</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="s">"""
+    Stacked LSTM encoder
+    """</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">input_dim</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> 
+                 <span class="n">n_layers</span><span class="p">,</span> <span class="n">dropout</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Encoder</span><span class="p">,</span> <span class="bp">self</span><span class="p">).</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">embed</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Embedding</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">lstm</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">LSTM</span><span class="p">(</span><span class="n">embed_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="n">dropout</span><span class="o">=</span><span class="n">dropout</span><span class="p">)</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">dropout</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Dropout</span><span class="p">(</span><span class="n">dropout</span><span class="p">)</span> 
+        
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">):</span>
+        <span class="n">embed</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">dropout</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">embed</span><span class="p">(</span><span class="n">src</span><span class="p">))</span>
+        <span class="n">out</span><span class="p">,</span> <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">lstm</span><span class="p">(</span><span class="n">embed</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">dropout</span><span class="p">(</span><span class="n">out</span><span class="p">),</span> <span class="n">hidden</span>
+    
+
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">nn</span><span class="p">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="s">"""
+    Sequence to Sequence model with attention
+    """</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="bp">self</span><span class="p">).</span><span class="n">__init__</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">encoder</span> <span class="o">=</span> <span class="n">encoder</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">decoder</span> <span class="o">=</span> <span class="n">decoder</span>
+    
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">src</span><span class="p">,</span> <span class="n">trg</span><span class="p">,</span> <span class="n">teacher_force_ratio</span> <span class="o">=</span> <span class="mf">0.5</span><span class="p">):</span>
+        <span class="n">outs</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span>
+            <span class="n">trg</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">trg</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="bp">self</span><span class="p">.</span><span class="n">decoder</span><span class="p">.</span><span class="n">output_dim</span>
+        <span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="n">src</span><span class="p">.</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">encoder_out</span><span class="p">,</span> <span class="n">hidden</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+        
+        <span class="n">x</span> <span class="o">=</span> <span class="n">trg</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">trg</span><span class="p">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="n">outs</span><span class="p">[</span><span class="n">t</span><span class="p">],</span> <span class="n">hidden</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">hidden</span><span class="p">,</span> <span class="n">encoder_out</span><span class="p">)</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">trg</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="k">if</span> <span class="n">random</span><span class="p">.</span><span class="n">random</span><span class="p">()</span> <span class="o">&lt;</span> <span class="n">teacher_force_ratio</span> <span class="k">else</span> <span class="n">outs</span><span class="p">[</span><span class="n">t</span><span class="p">].</span><span class="n">argmax</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">outs</span>
+</code></pre></div></div>
+
+<blockquote>
+  <p>With the model implementation complete, we are ready to train. The remainder of the post will be my own words and figures.</p>
+</blockquote>
+
+<h2 id="experiments">Experiments</h2>
+
+<p>The original paper trained and evaluated on the <a href="http://www.statmt.org/wmt14/translation-task.html">WMT14</a> German-English translation task, with a training set of 4.5 million sentence pairs. Since their implementation took “7 - 10 days to completely train a model,” we will opt for a much smaller training/evaluation dataset: Multi30K (<a href="https://arxiv.org/abs/1605.00459">Elliott et al., 2016</a>). This dataset consists of 30 thousand English-German sentence pairs, and we will be able to train the model on a single GPU in less than 31 minutes.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">torchtext.datasets</span> <span class="kn">import</span> <span class="n">Multi30k</span>
+<span class="kn">from</span> <span class="nn">torchtext.data</span> <span class="kn">import</span> <span class="n">Field</span><span class="p">,</span> <span class="n">BucketIterator</span>
+<span class="kn">import</span> <span class="nn">spacy</span>
+
+<span class="c1"># tokenizers
+</span><span class="n">spacy_de</span> <span class="o">=</span> <span class="n">spacy</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="s">'de'</span><span class="p">)</span>
+<span class="n">spacy_en</span> <span class="o">=</span> <span class="n">spacy</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="s">'en'</span><span class="p">)</span>
+<span class="n">tokenize_de</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">text</span><span class="p">:</span> <span class="p">[</span><span class="n">tok</span><span class="p">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">spacy_de</span><span class="p">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">)]</span>
+<span class="n">tokenize_en</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">text</span><span class="p">:</span> <span class="p">[</span><span class="n">tok</span><span class="p">.</span><span class="n">text</span> <span class="k">for</span> <span class="n">tok</span> <span class="ow">in</span> <span class="n">spacy_en</span><span class="p">.</span><span class="n">tokenizer</span><span class="p">(</span><span class="n">text</span><span class="p">)]</span>
+
+<span class="c1"># fields
+</span><span class="n">SRC</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">tokenize</span><span class="o">=</span><span class="n">tokenize_de</span><span class="p">,</span> <span class="n">init_token</span><span class="o">=</span><span class="s">'&lt;sos&gt;'</span><span class="p">,</span>
+            <span class="n">eos_token</span><span class="o">=</span><span class="s">"&lt;eos&gt;"</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+<span class="n">TRG</span> <span class="o">=</span> <span class="n">Field</span><span class="p">(</span><span class="n">tokenize</span><span class="o">=</span><span class="n">tokenize_de</span><span class="p">,</span> <span class="n">init_token</span><span class="o">=</span><span class="s">'&lt;sos&gt;'</span><span class="p">,</span>
+            <span class="n">eos_token</span><span class="o">=</span><span class="s">"&lt;eos&gt;"</span><span class="p">,</span> <span class="n">lower</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+
+<span class="c1"># data
+</span><span class="n">train_data</span><span class="p">,</span> <span class="n">valid_data</span><span class="p">,</span> <span class="n">test_data</span> <span class="o">=</span> <span class="n">Multi30k</span><span class="p">.</span><span class="n">splits</span><span class="p">((</span><span class="s">'.de'</span><span class="p">,</span> <span class="s">'.en'</span><span class="p">),</span> <span class="p">(</span><span class="n">SRC</span><span class="p">,</span> <span class="n">TRG</span><span class="p">))</span>
+<span class="n">SRC</span><span class="p">.</span><span class="n">build_vocab</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">min_freq</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+<span class="n">TRG</span><span class="p">.</span><span class="n">build_vocab</span><span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">min_freq</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Since we’re working with less data, we can make our model smaller as well. The paper uses 4 layers for their LSTM models, each with 1000 cells, and 1000-dimensional embeddings. We will use 2 layers for our LSTM models, each with 512 cells, and 256-dimensional embeddings. We will, however, use the same dropout probability (0.2), batch size (128) and uniform weight initialization ($[-0.1, 0.1]$):</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">input_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">SRC</span><span class="p">.</span><span class="n">vocab</span><span class="p">)</span>
+<span class="n">output_dim</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">TRG</span><span class="p">.</span><span class="n">vocab</span><span class="p">)</span>
+<span class="n">embed_dim</span> <span class="o">=</span> <span class="mi">256</span>
+<span class="n">hidden_dim</span> <span class="o">=</span> <span class="mi">512</span>
+<span class="n">n_layers</span> <span class="o">=</span> <span class="mi">2</span>
+<span class="n">dropout</span> <span class="o">=</span> <span class="mf">0.2</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">128</span>
+<span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">device</span><span class="p">(</span><span class="s">'cuda:0'</span> <span class="k">if</span> <span class="n">torch</span><span class="p">.</span><span class="n">cuda</span><span class="p">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s">'cpu'</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">init_weights</span><span class="p">(</span><span class="n">model</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">param</span> <span class="ow">in</span> <span class="n">model</span><span class="p">.</span><span class="n">parameters</span><span class="p">():</span>
+        <span class="n">nn</span><span class="p">.</span><span class="n">init</span><span class="p">.</span><span class="n">uniform_</span><span class="p">(</span><span class="n">param</span><span class="p">.</span><span class="n">data</span><span class="p">,</span> <span class="o">-</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.1</span><span class="p">)</span>
+
+<span class="n">train_loader</span><span class="p">,</span> <span class="n">valid_loader</span><span class="p">,</span> <span class="n">test_loader</span> <span class="o">=</span> <span class="n">BucketIterator</span><span class="p">.</span><span class="n">splits</span><span class="p">(</span>
+    <span class="p">(</span><span class="n">train_data</span><span class="p">,</span> <span class="n">valid_data</span><span class="p">,</span> <span class="n">test_data</span><span class="p">),</span>
+    <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">,</span>
+    <span class="n">device</span><span class="o">=</span><span class="n">device</span>
+<span class="p">)</span>
+
+<span class="n">encoder</span> <span class="o">=</span> <span class="n">Encoder</span><span class="p">(</span><span class="n">input_dim</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span>
+
+<span class="n">decoder</span> <span class="o">=</span> <span class="n">Decoder</span><span class="p">(</span><span class="n">output_dim</span><span class="p">,</span> <span class="n">embed_dim</span><span class="p">,</span> <span class="n">hidden_dim</span><span class="p">,</span> <span class="n">n_layers</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">(</span><span class="n">encoder</span><span class="p">,</span> <span class="n">decoder</span><span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">model</span><span class="p">.</span><span class="nb">apply</span><span class="p">(</span><span class="n">init_weights</span><span class="p">);</span>
+</code></pre></div></div>
+
+<h3 id="training">Training</h3>
+
+<p>We now fit the model to our training set using the Adam optimizer and cross-entropy loss:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">optim</span><span class="p">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">parameters</span><span class="p">())</span>
+<span class="n">criterion</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">CrossEntropyLoss</span><span class="p">(</span><span class="n">ignore_index</span><span class="o">=</span><span class="n">TRG</span><span class="p">.</span><span class="n">vocab</span><span class="p">.</span><span class="n">stoi</span><span class="p">[</span><span class="n">TRG</span><span class="p">.</span><span class="n">pad_token</span><span class="p">])</span>
+<span class="n">num_epochs</span> <span class="o">=</span> <span class="mi">10</span>
+
+<span class="k">def</span> <span class="nf">step</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">data</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">False</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">train</span><span class="p">()</span> <span class="k">if</span> <span class="n">train</span> <span class="k">else</span> <span class="n">model</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
+    <span class="n">total_loss</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">tqdm</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">leave</span><span class="o">=</span><span class="bp">False</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">train</span><span class="p">:</span> <span class="n">optimizer</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="n">pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">batch</span><span class="p">.</span><span class="n">src</span><span class="p">,</span> <span class="n">batch</span><span class="p">.</span><span class="n">trg</span><span class="p">)</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">pred</span><span class="p">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">pred</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">2</span><span class="p">)),</span> <span class="n">batch</span><span class="p">.</span><span class="n">trg</span><span class="p">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">train</span><span class="p">:</span>
+            <span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">()</span>
+            <span class="n">torch</span><span class="p">.</span><span class="n">nn</span><span class="p">.</span><span class="n">utils</span><span class="p">.</span><span class="n">clip_grad_norm_</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="mf">1.0</span><span class="p">)</span>
+            <span class="n">optimizer</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="p">.</span><span class="n">item</span><span class="p">()</span>
+    <span class="k">return</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+
+<span class="n">best_loss</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="s">'inf'</span><span class="p">)</span>
+<span class="n">train_loss</span><span class="p">,</span> <span class="n">valid_loss</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">2</span><span class="p">,</span> <span class="n">num_epochs</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">):</span>
+    <span class="n">train_loss</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">train</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">)</span>
+    <span class="n">valid_loss</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">valid_loader</span><span class="p">,</span> <span class="n">criterion</span><span class="p">)</span>
+    <span class="c1">#print(f"epoch: {e} train_loss: {train_loss[e]:.2f} valid_loss: {valid_loss[e]:.2f}")
+</span>    <span class="k">if</span> <span class="n">valid_loss</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">best_loss</span><span class="p">:</span>
+        <span class="n">torch</span><span class="p">.</span><span class="n">save</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">state_dict</span><span class="p">(),</span> <span class="s">'model.pt'</span><span class="p">)</span>
+        <span class="n">best_loss</span> <span class="o">=</span> <span class="n">valid_loss</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">train_loss</span><span class="p">[:</span><span class="mi">10</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s">"Train"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">valid_loss</span><span class="p">[:</span><span class="mi">10</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="s">"Valid."</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">legend</span><span class="p">();</span> <span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">"Cross-Entropy Loss"</span><span class="p">);</span> <span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">"Epoch"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">show</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p><img src="/images/2020-02-25-nlp-from-scratch-annotated-attention_20_0.png" alt="png" /></p>
+
+<h3 id="evaluation">Evaluation</h3>
+
+<p>Now that we have a trained model, we can test it on our test set. In addition to cross-entropy loss, another good metric we can use is <a href="https://en.wikipedia.org/wiki/Perplexity">perplexity</a>, which is a measurement of the models ability to predict the target translation. This can be calculated as simply $\exp(H(p))$, where $H(p)$ is the cross-entropy loss of the model over the test set. The lower the perplexity, the better the model is at predicting the target translation.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">model</span><span class="p">.</span><span class="n">load_state_dict</span><span class="p">(</span><span class="n">torch</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="s">"model.pt"</span><span class="p">))</span>
+<span class="n">test_loss</span> <span class="o">=</span> <span class="n">step</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">test_loader</span><span class="p">,</span> <span class="n">criterion</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Test loss: </span><span class="si">{</span><span class="n">test_loss</span><span class="p">:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Test perplexity: </span><span class="si">{</span><span class="n">np</span><span class="p">.</span><span class="n">exp</span><span class="p">(</span><span class="n">test_loss</span><span class="p">):.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Test loss: 2.63
+Test perplexity: 13.84
+</code></pre></div></div>
+
+<p>Our model achieves a perplexity of 13.84. This is worse then the paper’s best perplexity of 5.9, but there is no way to directly compare as we are using a different dataset. There are a few ways we could improve the model to better match the paper’s results:</p>
+
+<ol>
+  <li>
+    <p>Use bidirectional LSTM models; The model should be able to better “understand” the context of each word by looking at words both before and after each word.</p>
+  </li>
+  <li>
+    <p>More training data; The model could likely benefit from more training data, such as the aforementioned WMT14 dataset.</p>
+  </li>
+  <li>
+    <p>Larger model and ensemble; The paper used a much larger model, and a technique known as <a href="https://en.wikipedia.org/wiki/Ensemble_learning">ensemble learning</a>. By combining multiple model’s outputs into one, we could obtain better predictive performance.</p>
+  </li>
+</ol>
+
+<p>With that out of the way, lets run our model on some test sentences!</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">@</span><span class="n">torch</span><span class="p">.</span><span class="n">no_grad</span><span class="p">()</span>
+<span class="k">def</span> <span class="nf">translate</span><span class="p">(</span><span class="n">sentence</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">,</span> <span class="n">max_len</span><span class="o">=</span><span class="mi">50</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
+    <span class="n">src</span> <span class="o">=</span> <span class="n">SRC</span><span class="p">.</span><span class="n">process</span><span class="p">([</span><span class="n">sentence</span><span class="p">]).</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+    <span class="n">trg</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">ones</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">torch</span><span class="p">.</span><span class="n">int64</span><span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="o">*</span> <span class="n">TRG</span><span class="p">.</span><span class="n">vocab</span><span class="p">.</span><span class="n">stoi</span><span class="p">[</span><span class="n">TRG</span><span class="p">.</span><span class="n">init_token</span><span class="p">]</span>
+    <span class="n">trgs</span><span class="p">,</span> <span class="n">attention</span> <span class="o">=</span> <span class="p">[],</span> <span class="p">[]</span>
+    <span class="n">encoder_out</span><span class="p">,</span> <span class="n">hidden</span> <span class="o">=</span> <span class="n">model</span><span class="p">.</span><span class="n">encoder</span><span class="p">(</span><span class="n">src</span><span class="p">)</span>
+    
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">max_len</span><span class="p">):</span>
+        <span class="n">trg</span><span class="p">,</span> <span class="n">hidden</span><span class="p">,</span> <span class="n">atten</span> <span class="o">=</span> <span class="n">model</span><span class="p">.</span><span class="n">decoder</span><span class="p">(</span><span class="n">trg</span><span class="p">,</span> <span class="n">hidden</span><span class="p">,</span> <span class="n">encoder_out</span><span class="p">)</span>
+        <span class="n">trg</span> <span class="o">=</span> <span class="n">trg</span><span class="p">.</span><span class="n">argmax</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">trgs</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">trg</span><span class="p">)</span>
+        <span class="n">attention</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">atten</span><span class="p">.</span><span class="n">T</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">trg</span> <span class="o">==</span> <span class="n">TRG</span><span class="p">.</span><span class="n">vocab</span><span class="p">.</span><span class="n">stoi</span><span class="p">[</span><span class="n">TRG</span><span class="p">.</span><span class="n">eos_token</span><span class="p">]:</span> <span class="k">break</span>
+
+    <span class="n">trg</span> <span class="o">=</span> <span class="p">[</span><span class="n">TRG</span><span class="p">.</span><span class="n">vocab</span><span class="p">.</span><span class="n">itos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">trgs</span><span class="p">]</span>
+    <span class="n">src</span> <span class="o">=</span> <span class="p">[</span><span class="n">SRC</span><span class="p">.</span><span class="n">vocab</span><span class="p">.</span><span class="n">itos</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">src</span><span class="p">]</span>
+    <span class="n">attention</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">cat</span><span class="p">(</span><span class="n">attention</span><span class="p">).</span><span class="n">cpu</span><span class="p">().</span><span class="n">numpy</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">:]</span>
+    <span class="k">return</span> <span class="n">src</span><span class="p">,</span> <span class="n">trg</span><span class="p">,</span> <span class="n">attention</span>
+</code></pre></div></div>
+
+<p>Let’s take a look at our first example:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">example</span> <span class="o">=</span> <span class="mi">6</span>
+<span class="n">src</span><span class="p">,</span> <span class="n">trg</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="n">example</span><span class="p">].</span><span class="n">src</span><span class="p">,</span> <span class="n">test_data</span><span class="p">[</span><span class="n">example</span><span class="p">].</span><span class="n">trg</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Source: </span><span class="si">{</span><span class="s">' '</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Target: </span><span class="si">{</span><span class="s">' '</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">trg</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Source: eine gruppe von menschen steht vor einem iglu .
+Target: a group of people standing in front of an igloo .
+</code></pre></div></div>
+
+<p>And now our predicted translation:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">src</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">attention</span> <span class="o">=</span> <span class="n">translate</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Prediction: </span><span class="si">{</span><span class="s">' '</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">pred</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Prediction: a group of people standing in front of an igloo .
+</code></pre></div></div>
+
+<p>Not bad; let’s try another:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">example</span> <span class="o">=</span> <span class="mi">1</span>
+<span class="n">src</span><span class="p">,</span> <span class="n">trg</span> <span class="o">=</span> <span class="n">test_data</span><span class="p">[</span><span class="n">example</span><span class="p">].</span><span class="n">src</span><span class="p">,</span> <span class="n">test_data</span><span class="p">[</span><span class="n">example</span><span class="p">].</span><span class="n">trg</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Source: </span><span class="si">{</span><span class="s">' '</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">src</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Target: </span><span class="si">{</span><span class="s">' '</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">trg</span><span class="p">)</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Source: ein boston terrier läuft über saftig-grünes gras vor einem weißen zaun .
+Target: a boston terrier is running on lush green grass in front of a white fence .
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">src</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">attention</span> <span class="o">=</span> <span class="n">translate</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">device</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Prediction: </span><span class="si">{</span><span class="s">' '</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">pred</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Prediction: an &lt;unk&gt; dog runs through the grass in front of a white fence .
+</code></pre></div></div>
+
+<p>The model did not have the word “boston” in it’s vocabulary, so it was unable to translate that word. Although the sentences are not perfect translations, they are fairly coherent, and certainly better than a human could do with half an hour of learning German. One great thing about the model is that we can view the alignment weights $a_t$, and see which source word the model is “concentrating” on for each output word.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">plot_attention</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">trg</span><span class="p">,</span> <span class="n">attention</span><span class="p">):</span>
+    <span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">5</span><span class="p">),</span> <span class="n">dpi</span><span class="o">=</span><span class="mi">300</span><span class="p">)</span>
+    <span class="n">ax</span> <span class="o">=</span> <span class="n">fig</span><span class="p">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">111</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">matshow</span><span class="p">(</span><span class="n">attention</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">xaxis</span><span class="p">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">ticker</span><span class="p">.</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">yaxis</span><span class="p">.</span><span class="n">set_major_locator</span><span class="p">(</span><span class="n">ticker</span><span class="p">.</span><span class="n">MultipleLocator</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">set_xticklabels</span><span class="p">([</span><span class="s">''</span><span class="p">]</span> <span class="o">+</span> <span class="n">src</span><span class="p">,</span> <span class="n">rotation</span><span class="o">=</span><span class="mi">60</span><span class="p">)</span>
+    <span class="n">ax</span><span class="p">.</span><span class="n">set_yticklabels</span><span class="p">([</span><span class="s">''</span><span class="p">]</span> <span class="o">+</span> <span class="n">trg</span><span class="p">)</span> 
+    
+<span class="n">plot_attention</span><span class="p">(</span><span class="n">src</span><span class="p">,</span> <span class="n">pred</span><span class="p">,</span> <span class="n">attention</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/images/2020-02-25-nlp-from-scratch-annotated-attention_34_0.png" alt="png" /></p>
+
+<p>We can see that model aligns each German source word with one of the predicted words. Terrier with dog, läuft with runs, … etc.</p>
+
+<h2 id="conclusion">Conclusion</h2>
+
+<p>Attention is an important concept to know when it comes to understanding the
+current state-of-the-art language models. Now that we’ve created a simple
+implementation for machine translation, we’ll be able to expand upon this model
+for different tasks. Stay tuned for my next post, where we’ll create a small
+version of Google’s BERT (<a href="https://arxiv.org/abs/1810.04805">Devlin et al.,
+2018</a>) from scratch. Be sure to follow me on
+<a href="https://twitter.com/teddykoker">twitter</a> for updates!</p>
+
+<p>This notebook can be
+found on
+<a href="https://github.com/teddykoker/blog/blob/master/_notebooks/2020-02-25-nlp-from-scratch-annotated-attention.ipynb">Github</a>,
+or be run on <a href="https://colab.research.google.com/github/teddykoker/blog/blob/master/_notebooks/2020-02-25-nlp-from-scratch-annotated-attention.ipynb">Google
+Colab</a>.</p>
+
+<hr>
+<ol class="bibliography"></ol>
+
+</div>
+</body>
+</html>

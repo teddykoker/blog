@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>DataLoaders Explained: Building a Multi-Process Data Loader from Scratch | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="DataLoaders Explained: Building a Multi-Process Data Loader from Scratch" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="When training a Deep Learning model, one must often read and pre-process data before it can be passed through the model. Depending on the data source and transformations needed, this step can amount to a non-negligable amount of time, which leads to unecessarily longer training times. This bottleneck is often remedied using a torch.utils.data.DataLoader for PyTorch, or a tf.data.Dataset for Tensorflow. These structures leverage parallel processing and pre-fetching in order reduce data loading time as much as possible. In this post we will build a simple version of PyTorch’s DataLoader, and show the benefits of parallel pre-processing." />
+<meta property="og:description" content="When training a Deep Learning model, one must often read and pre-process data before it can be passed through the model. Depending on the data source and transformations needed, this step can amount to a non-negligable amount of time, which leads to unecessarily longer training times. This bottleneck is often remedied using a torch.utils.data.DataLoader for PyTorch, or a tf.data.Dataset for Tensorflow. These structures leverage parallel processing and pre-fetching in order reduce data loading time as much as possible. In this post we will build a simple version of PyTorch’s DataLoader, and show the benefits of parallel pre-processing." />
+<link rel="canonical" href="https://teddykoker.com/2020/12/dataloader/" />
+<meta property="og:url" content="https://teddykoker.com/2020/12/dataloader/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/dataloader_time.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-12-18T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"DataLoaders Explained: Building a Multi-Process Data Loader from Scratch","dateModified":"2020-12-18T00:00:00+00:00","datePublished":"2020-12-18T00:00:00+00:00","description":"When training a Deep Learning model, one must often read and pre-process data before it can be passed through the model. Depending on the data source and transformations needed, this step can amount to a non-negligable amount of time, which leads to unecessarily longer training times. This bottleneck is often remedied using a torch.utils.data.DataLoader for PyTorch, or a tf.data.Dataset for Tensorflow. These structures leverage parallel processing and pre-fetching in order reduce data loading time as much as possible. In this post we will build a simple version of PyTorch’s DataLoader, and show the benefits of parallel pre-processing.","url":"https://teddykoker.com/2020/12/dataloader/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2020/12/dataloader/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/dataloader_time.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>DataLoaders Explained: Building a Multi-Process Data Loader from Scratch</h1>
+<p>Published 2020-12-18</p>
+<hr>
+<p>When training a Deep Learning model, one must often read and pre-process data
+before it can be passed through the model. Depending on the data source and
+transformations needed, this step can amount to a non-negligable amount of time,
+which leads to unecessarily longer training times. This bottleneck is often
+remedied using a
+<a href="https://pytorch.org/docs/stable/data.html#torch.utils.data.DataLoader"><code class="highlighter-rouge">torch.utils.data.DataLoader</code></a>
+for PyTorch, or a
+<a href="https://www.tensorflow.org/api_docs/python/tf/data/Dataset"><code class="highlighter-rouge">tf.data.Dataset</code></a>
+for Tensorflow. These structures leverage parallel processing and pre-fetching
+in order reduce data loading time as much as possible. In this post we will
+build a simple version of PyTorch’s <code class="highlighter-rouge">DataLoader</code>, and show the benefits of
+parallel pre-processing.</p>
+
+<!--more-->
+
+<p>The full code for this project is available at
+<a href="https://github.com/teddykoker/tinyloader">github.com/teddykoker/tinyloader</a>.</p>
+
+<h2 id="a-naive-base">A Naive Base</h2>
+
+<p>Before we get to parallel processing, we should build a simple, naive version of
+our data loader. To initialize our dataloader, we simply store the provided <code class="highlighter-rouge">dataset</code>,
+<code class="highlighter-rouge">batch_size</code>, and <code class="highlighter-rouge">collate_fn</code>. We also create a variable <code class="highlighter-rouge">self.index</code> which
+will store next index that needs to be loaded from the dataset:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">NaiveDataLoader</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span> <span class="n">collate_fn</span><span class="o">=</span><span class="n">default_collate</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">dataset</span> <span class="o">=</span> <span class="n">dataset</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">batch_size</span> <span class="o">=</span> <span class="n">batch_size</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">collate_fn</span> <span class="o">=</span> <span class="n">collate_fn</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+</code></pre></div></div>
+
+<p>The <code class="highlighter-rouge">__iter__</code> method simply returns the object to be iterated over. Since this
+method is implicitly called anytime you iterate over the dataloader, we will
+want to reset <code class="highlighter-rouge">self.index</code> to 0:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span>
+</code></pre></div></div>
+
+<p>In order for a Python object to be iterable, we must define the <code class="highlighter-rouge">__next__</code>
+method, which will provide the next batch from the dataset whenever it is
+called, by repeatedly calling a <code class="highlighter-rouge">get()</code> method to fill up the whole batch:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">index</span> <span class="o">&gt;=</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">dataset</span><span class="p">):</span>
+            <span class="c1"># stop iteration once index is out of bounds
+</span>            <span class="k">raise</span> <span class="nb">StopIteration</span>
+        <span class="n">batch_size</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">dataset</span><span class="p">)</span> <span class="o">-</span> <span class="bp">self</span><span class="p">.</span><span class="n">index</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">batch_size</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">collate_fn</span><span class="p">([</span><span class="bp">self</span><span class="p">.</span><span class="n">get</span><span class="p">()</span> <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">batch_size</span><span class="p">)])</span>
+</code></pre></div></div>
+
+<p>Lastly, we define the <code class="highlighter-rouge">get()</code> method which is where we actually load the element
+at <code class="highlighter-rouge">self.index</code> from the dataset.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">dataset</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">index</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">item</span>
+</code></pre></div></div>
+
+<p>All the <code class="highlighter-rouge">NaiveDataLoader</code> does is wrap some indexable <code class="highlighter-rouge">dataset</code>, allowing
+it to be iterated in mini-batches, as is usually done when training a model. It
+can be used like so:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">&gt;&gt;&gt;</span> <span class="n">dataset</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="mi">16</span><span class="p">))</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="n">dataloader</span> <span class="o">=</span> <span class="n">NaiveDataLoader</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">8</span><span class="p">)</span>
+<span class="o">&gt;&gt;&gt;</span> <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+<span class="p">...</span>     <span class="k">print</span><span class="p">(</span><span class="n">batch</span><span class="p">)</span>
+<span class="p">...</span>
+<span class="p">[</span><span class="mi">0</span> <span class="mi">1</span> <span class="mi">2</span> <span class="mi">3</span> <span class="mi">4</span> <span class="mi">5</span> <span class="mi">6</span> <span class="mi">7</span><span class="p">]</span>
+<span class="p">[</span> <span class="mi">8</span>  <span class="mi">9</span> <span class="mi">10</span> <span class="mi">11</span> <span class="mi">12</span> <span class="mi">13</span> <span class="mi">14</span> <span class="mi">15</span><span class="p">]</span>
+</code></pre></div></div>
+
+<p>We now basically have a fully functional data loader; The only issue is that
+<code class="highlighter-rouge">get()</code> is loading in one element of dataset at a time, using the same process
+that would be used for training. This is fine for printing elements from a list,
+but could become very problemattic the loop must stall while waiting to perform
+some file IO or potentially costly data augmentation.</p>
+
+<h2 id="introducing-workers">Introducing Workers</h2>
+
+<p>To prevent data loading from blocking training, we can create “workers” that
+load the data asyncrounously. A simple way of doing this is providing each
+worker a queue of indicies for that worker load, and an output queue where the
+worker can place the loaded data. All the worker has to do is repeatedly check
+its index queue, and load the data if the queue is not empty:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">worker_fn</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">index_queue</span><span class="p">,</span> <span class="n">output_queue</span><span class="p">):</span>
+    <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">index</span> <span class="o">=</span> <span class="n">index_queue</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="k">except</span> <span class="n">queue</span><span class="p">.</span><span class="n">Empty</span><span class="p">:</span>
+            <span class="k">continue</span>
+        <span class="k">if</span> <span class="n">index</span> <span class="ow">is</span> <span class="bp">None</span><span class="p">:</span>
+            <span class="k">break</span>
+        <span class="n">output_queue</span><span class="p">.</span><span class="n">put</span><span class="p">((</span><span class="n">index</span><span class="p">,</span> <span class="n">dataset</span><span class="p">[</span><span class="n">index</span><span class="p">]))</span>
+</code></pre></div></div>
+
+<p>Python’s
+<a href="https://docs.python.org/3/library/multiprocessing.html#multiprocessing.Queue"><code class="highlighter-rouge">multiprocessing.Queue</code></a>
+is perfect for this since it can be shared across processes.</p>
+
+<p><em>Note: Python does have a
+<a href="https://docs.python.org/3/library/threading.html"><code class="highlighter-rouge">threading</code></a> package;
+however, due to the Global Interpreter Lock (GIL), execution of any Python code
+is limited to one thread at a time, while all other threads are locked. To
+circumvent this, we can use
+<a href="https://docs.python.org/3/library/multiprocessing.html"><code class="highlighter-rouge">multiprocessing</code></a>,
+which uses subprocesses instead of threads. Since each subprocess has its own memory,
+we do not have to worry about the GIL.</em></p>
+
+<h2 id="multiprocess-data-loader">Multiprocess Data Loader</h2>
+
+<p>Using our worker function, we can define a multi-process data loader,
+subclassing our naive data loader. This data loader will spawn <code class="highlighter-rouge">num_workers</code>
+workers upon its initialization:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">DataLoader</span><span class="p">(</span><span class="n">NaiveDataLoader</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">dataset</span><span class="p">,</span>
+        <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+        <span class="n">num_workers</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">prefetch_batches</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span>
+        <span class="n">collate_fn</span><span class="o">=</span><span class="n">default_collate</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="nb">super</span><span class="p">().</span><span class="n">__init__</span><span class="p">(</span><span class="n">dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span> <span class="n">collate_fn</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">num_workers</span> <span class="o">=</span> <span class="n">num_workers</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">prefetch_batches</span> <span class="o">=</span> <span class="n">prefetch_batches</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">output_queue</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="p">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">index_queues</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">workers</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">worker_cycle</span> <span class="o">=</span> <span class="n">itertools</span><span class="p">.</span><span class="n">cycle</span><span class="p">(</span><span class="nb">range</span><span class="p">(</span><span class="n">num_workers</span><span class="p">))</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">prefetch_index</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_workers</span><span class="p">):</span>
+            <span class="n">index_queue</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="p">.</span><span class="n">Queue</span><span class="p">()</span>
+            <span class="n">worker</span> <span class="o">=</span> <span class="n">multiprocessing</span><span class="p">.</span><span class="n">Process</span><span class="p">(</span>
+                <span class="n">target</span><span class="o">=</span><span class="n">worker_fn</span><span class="p">,</span> <span class="n">args</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">dataset</span><span class="p">,</span> <span class="n">index_queue</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">output_queue</span><span class="p">)</span>
+            <span class="p">)</span>
+            <span class="n">worker</span><span class="p">.</span><span class="n">daemon</span> <span class="o">=</span> <span class="bp">True</span>
+            <span class="n">worker</span><span class="p">.</span><span class="n">start</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">workers</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">worker</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">index_queues</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">index_queue</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">prefetch</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>We have a single <code class="highlighter-rouge">output_queue</code>, that is shared across all of the worker
+processes, each of which has its own <code class="highlighter-rouge">index_queue</code>. Additionaly, we will store
+<code class="highlighter-rouge">self.prefetch_batches</code>, which will determine how many batches per worker to
+fetch ahead of time, and <code class="highlighter-rouge">self.prefetch_index</code>, which denotes index of the next
+item to prefetch. Using this we can define our <code class="highlighter-rouge">prefetch()</code> method, which will
+keep adding indicies to each workers queue (in a round-robin fashion) until two
+batches of indicies are added:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">prefetch</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">while</span> <span class="p">(</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">prefetch_index</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">dataset</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="bp">self</span><span class="p">.</span><span class="n">prefetch_index</span>
+            <span class="o">&lt;</span> <span class="bp">self</span><span class="p">.</span><span class="n">index</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="bp">self</span><span class="p">.</span><span class="n">num_workers</span> <span class="o">*</span> <span class="bp">self</span><span class="p">.</span><span class="n">batch_size</span>
+        <span class="p">):</span>
+            <span class="c1"># if the prefetch_index hasn't reached the end of the dataset
+</span>            <span class="c1"># and it is not 2 batches ahead, add indexes to the index queues
+</span>            <span class="bp">self</span><span class="p">.</span><span class="n">index_queues</span><span class="p">[</span><span class="nb">next</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">worker_cycle</span><span class="p">)].</span><span class="n">put</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">prefetch_index</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">prefetch_index</span> <span class="o">+=</span> <span class="mi">1</span>
+</code></pre></div></div>
+
+<p>Now that we have figured out how we are adding indicies to each worker’s queue,
+we need to override our dataloader’s <code class="highlighter-rouge">get()</code> method to retrieve the loaded
+items.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">get</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">prefetch</span><span class="p">()</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">index</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">cache</span><span class="p">:</span>
+            <span class="n">item</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">cache</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">index</span><span class="p">]</span>
+            <span class="k">del</span> <span class="bp">self</span><span class="p">.</span><span class="n">cache</span><span class="p">[</span><span class="bp">self</span><span class="p">.</span><span class="n">index</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">True</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">data</span><span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">output_queue</span><span class="p">.</span><span class="n">get</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+                <span class="k">except</span> <span class="n">queue</span><span class="p">.</span><span class="n">Empty</span><span class="p">:</span>  <span class="c1"># output queue empty, keep trying
+</span>                    <span class="k">continue</span>
+                <span class="k">if</span> <span class="n">index</span> <span class="o">==</span> <span class="bp">self</span><span class="p">.</span><span class="n">index</span><span class="p">:</span>  <span class="c1"># found our item, ready to return
+</span>                    <span class="n">item</span> <span class="o">=</span> <span class="n">data</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>  <span class="c1"># item isn't the one we want, cache for later
+</span>                    <span class="bp">self</span><span class="p">.</span><span class="n">cache</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">data</span>
+
+        <span class="bp">self</span><span class="p">.</span><span class="n">index</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">item</span>
+</code></pre></div></div>
+
+<p>To start, we call <code class="highlighter-rouge">prefetch()</code>, which will ensure the next batches are in the
+process of being loaded. We then check the cache to see if the item we want
+(with index <code class="highlighter-rouge">self.index</code>) has already been emptied from the <code class="highlighter-rouge">output_queue</code>. If it
+has, we can simply return it; otherwise we must continuesly check the
+<code class="highlighter-rouge">output_queue</code> for the item, caching any other items we encounter. This step is
+necessary, as we cannot guarantee the order in which items are recieved, even if
+they are prefetched in order.</p>
+
+<p>With the <code class="highlighter-rouge">get()</code> method overriden, our data loader is almost complete. All that
+is left is some housekeeping to ensure our data loader can be iterated over
+multiple times, and does not leave any stray processes running:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">cache</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">prefetch_index</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">prefetch</span><span class="p">()</span>
+        <span class="k">return</span> <span class="bp">self</span>
+</code></pre></div></div>
+
+<p>Just like our naive data loader, we will use the <code class="highlighter-rouge">__iter__</code> method to reset the
+state of our data loader. In addition, we will need to implement a <code class="highlighter-rouge">__del__</code>
+method, which is called when the data loader no longer has any references and is
+garabage-collected. We will use this to safely stop all of the workers:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code>    <span class="k">def</span> <span class="nf">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Stop each worker by passing None to its index queue
+</span>            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">w</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">workers</span><span class="p">):</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">index_queues</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">put</span><span class="p">(</span><span class="bp">None</span><span class="p">)</span>
+                <span class="n">w</span><span class="p">.</span><span class="n">join</span><span class="p">(</span><span class="n">timeout</span><span class="o">=</span><span class="mf">5.0</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">index_queues</span><span class="p">:</span>  <span class="c1"># close all queues
+</span>                <span class="n">q</span><span class="p">.</span><span class="n">cancel_join_thread</span><span class="p">()</span> 
+                <span class="n">q</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">output_queue</span><span class="p">.</span><span class="n">cancel_join_thread</span><span class="p">()</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">output_queue</span><span class="p">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">finally</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">w</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">workers</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">w</span><span class="p">.</span><span class="n">is_alive</span><span class="p">():</span>  <span class="c1"># manually terminate worker if all else fails
+</span>                    <span class="n">w</span><span class="p">.</span><span class="n">terminate</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p>This is our full <code class="highlighter-rouge">DataLoader</code> implementation! Now we can test it to see if we
+observe any noticable improvements.</p>
+
+<h2 id="testing">Testing</h2>
+
+<p>As a simple test, we can mock a dataset that requires some time to load an
+element simply by calling <code class="highlighter-rouge">time.sleep()</code> before returning an item:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">class</span> <span class="nc">Dataset</span><span class="p">:</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">size</span><span class="o">=</span><span class="mi">2048</span><span class="p">,</span> <span class="n">load_time</span><span class="o">=</span><span class="mf">0.0005</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">size</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">load_time</span> <span class="o">=</span> <span class="n">size</span><span class="p">,</span> <span class="n">load_time</span>
+
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="p">.</span><span class="n">size</span>
+
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="n">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">load_time</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">((</span><span class="mi">1</span><span class="p">,</span> <span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">)),</span> <span class="mi">1</span>  <span class="c1"># return img, label
+</span></code></pre></div></div>
+
+<p>We can also mimic a training loop by iterating through a dataloader, sleeping
+every step to mock the time it would take to forward propegate, back propegate,
+and update the weights of a network:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">dataloader</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">step_time</span><span class="o">=</span><span class="mf">0.1</span><span class="p">):</span>
+    <span class="n">steps</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">start</span> <span class="o">=</span> <span class="n">time</span><span class="p">.</span><span class="n">time</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">batch</span> <span class="ow">in</span> <span class="n">dataloader</span><span class="p">:</span>
+            <span class="c1"># mimic forward, backward, and update step
+</span>            <span class="n">time</span><span class="p">.</span><span class="n">sleep</span><span class="p">(</span><span class="n">step_time</span><span class="p">)</span>
+            <span class="n">steps</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">time</span><span class="p">.</span><span class="n">time</span><span class="p">()</span> <span class="o">-</span> <span class="n">start</span><span class="p">)</span> <span class="o">/</span> <span class="n">steps</span>
+</code></pre></div></div>
+
+<p>For my contrived experiment, we will make each training step take 0.1 seconds,
+each individual item 0.0005 seconds to load from the dataset. We will then
+measure average time needed to perform a step with a batch size of 64, while we
+vary the number of workers:</p>
+
+<p><img src="/images/dataloader_time.png" alt="" /></p>
+
+<p><em>The full code needed to reproduce this experiment is available
+<a href="https://github.com/teddykoker/tinyloader">here</a>.</em></p>
+
+<p>As expected, the naive data loader (<code class="highlighter-rouge">num_workers</code> = 0) performs far worse, as
+loading the full batch syncronously blocks the training step. As we increase the
+number of workers, we notice a steady improvement until 3-4 workers, where the
+data loading time starts to increase. This is likely the case because the memory
+overhead of having many processes pre-fetching data. Unfortunately there is no
+hard-and-fast rule for determining how many workers to use. Some <a href="https://discuss.pytorch.org/t/guidelines-for-assigning-num-workers-to-dataloader/813/5">have
+suggested</a>
+that using a value equal to 4 times the number of GPUs being used, but I would
+recommend trying a few values to see what works best.</p>
+
+<p>Overall, the <code class="highlighter-rouge">DataLoader</code> is a great tool for deep learning, and building one
+from scratch is a great way to understand how and why it works. As Richard
+Feynman wrote, “What I cannot create, I do not understand”.</p>
+
+<hr>
+<ol class="bibliography"></ol>
+
+</div>
+</body>
+</html>

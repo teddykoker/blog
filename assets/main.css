@@ -1,0 +1,44 @@
+html {
+  font-family: sans-serif;
+}
+
+img {
+    max-width: 100%;
+    vertical-align: middle;
+}
+
+.content {
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1em;
+    padding-right: 1em;
+    padding-bottom: 100px;
+    max-width: 700px;
+    line-height: 1.5;
+}
+
+  
+.katex-display {
+    overflow: auto hidden;
+} 
+
+.highlight {
+    /* margin-left: 2em; */
+    font-size: 13px;
+    line-height: 1.3em;
+    overflow-x: auto;
+}
+ 
+nav {
+    margin-top: 15px;
+    margin-bottom: 15px;
+  }
+
+.nav ul {
+    list-style-type: none;
+    padding: 0;
+}
+.nav ul li {
+    display: inline;
+    margin-right: 10px;
+}

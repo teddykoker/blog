@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Improving Cross Sectional Mean Reversion Strategy in Python | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="Improving Cross Sectional Mean Reversion Strategy in Python" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In my last post we implemented a cross-sectional mean reversion strategy from Ernest Chan’s Algorithmic Trading: Winning Strategies and Their Rationale. In this post we will look at a few improvements we can make to the strategy so we can start live trading!" />
+<meta property="og:description" content="In my last post we implemented a cross-sectional mean reversion strategy from Ernest Chan’s Algorithmic Trading: Winning Strategies and Their Rationale. In this post we will look at a few improvements we can make to the strategy so we can start live trading!" />
+<link rel="canonical" href="https://teddykoker.com/2019/05/improving-cross-sectional-mean-reversion-strategy-in-python/" />
+<meta property="og:url" content="https://teddykoker.com/2019/05/improving-cross-sectional-mean-reversion-strategy-in-python/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="http://teddykoker.com/images/2019-05-05-improving-cross-sectional-mean-reversion-strategy-in-python_22_0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-05-05T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"Improving Cross Sectional Mean Reversion Strategy in Python","dateModified":"2019-05-05T00:00:00+00:00","datePublished":"2019-05-05T00:00:00+00:00","description":"In my last post we implemented a cross-sectional mean reversion strategy from Ernest Chan’s Algorithmic Trading: Winning Strategies and Their Rationale. In this post we will look at a few improvements we can make to the strategy so we can start live trading!","url":"https://teddykoker.com/2019/05/improving-cross-sectional-mean-reversion-strategy-in-python/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2019/05/improving-cross-sectional-mean-reversion-strategy-in-python/"},"@type":"BlogPosting","image":"http://teddykoker.com/images/2019-05-05-improving-cross-sectional-mean-reversion-strategy-in-python_22_0.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>Improving Cross Sectional Mean Reversion Strategy in Python</h1>
+<p>Published 2019-05-05</p>
+<hr>
+<p>In my <a href="/2019/04/backtesting-a-cross-sectional-mean-reversion-strategy-in-python/">last post</a> we implemented a cross-sectional mean reversion strategy from Ernest Chan’s <a href="https://amzn.to/2VptDjd">Algorithmic Trading: Winning Strategies and Their Rationale</a>. In this post we will look at a few improvements we can make to the strategy so we can start live trading!</p>
+
+<h2 id="setup">Setup</h2>
+
+<p>We will be using the same S&amp;P 500 dataset we created in the last post. Let’s load it in.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span> 
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">backtrader</span> <span class="k">as</span> <span class="n">bt</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s">"figure.figsize"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">10</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span> <span class="c1"># (w, h)
+</span><span class="n">plt</span><span class="p">.</span><span class="n">ioff</span><span class="p">()</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">tickers</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">'spy/tickers.csv'</span><span class="p">,</span> <span class="n">header</span><span class="o">=</span><span class="bp">None</span><span class="p">)[</span><span class="mi">1</span><span class="p">].</span><span class="n">tolist</span><span class="p">()</span>
+<span class="n">start</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2014</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">28</span><span class="p">)</span>
+<span class="n">end</span> <span class="o">=</span> <span class="n">datetime</span><span class="p">(</span><span class="mi">2019</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">25</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">datas</span> <span class="o">=</span> <span class="p">[</span><span class="n">bt</span><span class="p">.</span><span class="n">feeds</span><span class="p">.</span><span class="n">GenericCSVData</span><span class="p">(</span>
+            <span class="n">fromdate</span><span class="o">=</span><span class="n">start</span><span class="p">,</span>
+            <span class="n">todate</span><span class="o">=</span><span class="n">end</span><span class="p">,</span>
+            <span class="n">dataname</span><span class="o">=</span><span class="sa">f</span><span class="s">"spy/</span><span class="si">{</span><span class="n">ticker</span><span class="si">}</span><span class="s">.csv"</span><span class="p">,</span>
+            <span class="n">dtformat</span><span class="o">=</span><span class="p">(</span><span class="s">'%Y-%m-%d'</span><span class="p">),</span>
+            <span class="n">openinterest</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span>
+            <span class="n">nullvalue</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">plot</span><span class="o">=</span><span class="bp">False</span>
+        <span class="p">)</span> <span class="k">for</span> <span class="n">ticker</span> <span class="ow">in</span> <span class="n">tickers</span><span class="p">]</span>
+</code></pre></div></div>
+
+<p>Great. Now let’s add a helper function that runs the backtest and returns important metrics.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">backtest</span><span class="p">(</span><span class="n">datas</span><span class="p">,</span> <span class="n">strategy</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+    <span class="n">cerebro</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">Cerebro</span><span class="p">(</span><span class="n">stdstats</span><span class="o">=</span><span class="bp">False</span><span class="p">)</span>
+    <span class="n">cerebro</span><span class="p">.</span><span class="n">broker</span><span class="p">.</span><span class="n">set_coc</span><span class="p">(</span><span class="bp">True</span><span class="p">)</span>
+    <span class="n">cerebro</span><span class="p">.</span><span class="n">broker</span><span class="p">.</span><span class="n">setcash</span><span class="p">(</span><span class="mi">1_000_000</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">data</span> <span class="ow">in</span> <span class="n">datas</span><span class="p">:</span>
+        <span class="n">cerebro</span><span class="p">.</span><span class="n">adddata</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+    <span class="n">cerebro</span><span class="p">.</span><span class="n">addobserver</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">observers</span><span class="p">.</span><span class="n">Value</span><span class="p">)</span>
+    <span class="n">cerebro</span><span class="p">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">analyzers</span><span class="p">.</span><span class="n">SharpeRatio</span><span class="p">,</span> <span class="n">riskfreerate</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">cerebro</span><span class="p">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">analyzers</span><span class="p">.</span><span class="n">Returns</span><span class="p">)</span>
+    <span class="n">cerebro</span><span class="p">.</span><span class="n">addanalyzer</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">analyzers</span><span class="p">.</span><span class="n">DrawDown</span><span class="p">)</span>
+    <span class="n">cerebro</span><span class="p">.</span><span class="n">addstrategy</span><span class="p">(</span><span class="n">strategy</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+    <span class="n">results</span> <span class="o">=</span> <span class="n">cerebro</span><span class="p">.</span><span class="n">run</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">plot</span><span class="p">:</span>
+        <span class="n">cerebro</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">iplot</span><span class="o">=</span><span class="bp">False</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">analyzers</span><span class="p">.</span><span class="n">drawdown</span><span class="p">.</span><span class="n">get_analysis</span><span class="p">()[</span><span class="s">'max'</span><span class="p">][</span><span class="s">'drawdown'</span><span class="p">],</span>
+            <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">analyzers</span><span class="p">.</span><span class="n">returns</span><span class="p">.</span><span class="n">get_analysis</span><span class="p">()[</span><span class="s">'rnorm100'</span><span class="p">],</span>
+            <span class="n">results</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">analyzers</span><span class="p">.</span><span class="n">sharperatio</span><span class="p">.</span><span class="n">get_analysis</span><span class="p">()[</span><span class="s">'sharperatio'</span><span class="p">])</span>
+
+</code></pre></div></div>
+
+<p>Now we are ready for some improvements.</p>
+
+<h2 id="improvements">Improvements</h2>
+
+<h3 id="number-of-positions">Number of Positions</h3>
+
+<p>If we recall from the last post, one of the limitations of the strategy was the number of positions it held at once. If the strategy was given a universe of 500 stocks, it would trade all of them. Not only would this rack up commission charges, it would be difficult to match the calculated weights in the portfolio without a very large amount of capital. The solution to this is fairly straightforward. While we are calculating the weights, we can simply choose the <em>n</em> stocks with the highest absolute weight. Here we can see the implementation:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">max_n</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="n">argpartition</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="o">-</span><span class="n">n</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]</span>
+
+<span class="k">class</span> <span class="nc">CrossSectionalMR</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">Strategy</span><span class="p">):</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s">'num_positions'</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">inds</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">datas</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"pct"</span><span class="p">]</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">indicators</span><span class="p">.</span><span class="n">PercentChange</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">close</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prenext</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="nb">next</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">available</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">),</span> <span class="bp">self</span><span class="p">.</span><span class="n">datas</span><span class="p">))</span> <span class="c1"># only look at data that existed yesterday
+</span>        <span class="n">rets</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">available</span><span class="p">))</span>            
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">available</span><span class="p">):</span>
+            <span class="n">rets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">'pct'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">market_ret</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rets</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">rets</span> <span class="o">-</span> <span class="n">market_ret</span><span class="p">)</span>
+        <span class="n">max_weights_index</span> <span class="o">=</span> <span class="n">max_n</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nb">abs</span><span class="p">(</span><span class="n">weights</span><span class="p">),</span> <span class="bp">self</span><span class="p">.</span><span class="n">params</span><span class="p">.</span><span class="n">num_positions</span><span class="p">)</span> 
+        <span class="n">max_weights</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[</span><span class="n">max_weights_index</span><span class="p">]</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nb">abs</span><span class="p">(</span><span class="n">max_weights</span><span class="p">))</span>
+                
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">available</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">max_weights_index</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">order_target_percent</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">order_target_percent</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Now instead of holding positions on every stock in the universe, we can only trade the top 100 stocks with the greatest weights:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">dd</span><span class="p">,</span> <span class="n">cagr</span><span class="p">,</span> <span class="n">sharpe</span> <span class="o">=</span> <span class="n">backtest</span><span class="p">(</span><span class="n">datas</span><span class="p">,</span> <span class="n">CrossSectionalMR</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">num_positions</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Max Drawdown: </span><span class="si">{</span><span class="n">dd</span><span class="p">:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%</span><span class="se">\n</span><span class="s">APR: </span><span class="si">{</span><span class="n">cagr</span><span class="p">:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%</span><span class="se">\n</span><span class="s">Sharpe: </span><span class="si">{</span><span class="n">sharpe</span><span class="p">:.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-05-05-improving-cross-sectional-mean-reversion-strategy-in-python_14_0.png" alt="png" /></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Max Drawdown: 12.27%
+APR: 9.61%
+Sharpe: 1.071
+</code></pre></div></div>
+
+<p>Now let’s try the top 20:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">dd</span><span class="p">,</span> <span class="n">cagr</span><span class="p">,</span> <span class="n">sharpe</span> <span class="o">=</span> <span class="n">backtest</span><span class="p">(</span><span class="n">datas</span><span class="p">,</span> <span class="n">CrossSectionalMR</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">num_positions</span><span class="o">=</span><span class="mi">20</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Max Drawdown: </span><span class="si">{</span><span class="n">dd</span><span class="p">:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%</span><span class="se">\n</span><span class="s">APR: </span><span class="si">{</span><span class="n">cagr</span><span class="p">:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%</span><span class="se">\n</span><span class="s">Sharpe: </span><span class="si">{</span><span class="n">sharpe</span><span class="p">:.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-05-05-improving-cross-sectional-mean-reversion-strategy-in-python_16_0.png" alt="png" /></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Max Drawdown: 29.10%
+APR: 10.26%
+Sharpe: 0.642
+</code></pre></div></div>
+
+<p>We can see that as we decrease the number of positions, we are increasing the volatility of the portfolio. Maybe if we only invest in stocks with lower volatility we’ll see a better result.</p>
+
+<h3 id="volatility-filter">Volatility Filter</h3>
+
+<p>Now we will try using the same weight formula, but only trade stocks that are in the top <i>n</i> sorted by weight, and in the bottom <i>n</i>, sorted by 5-day standard deviation. In this way we will only trade stocks that have a comparatively high diversion from the mean returns of the universe, and comparatively low volatility.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">min_n</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="n">argpartition</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">n</span><span class="p">)[:</span><span class="n">n</span><span class="p">]</span>
+
+<span class="k">def</span> <span class="nf">max_n</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="n">n</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="n">argpartition</span><span class="p">(</span><span class="n">array</span><span class="p">,</span> <span class="o">-</span><span class="n">n</span><span class="p">)[</span><span class="o">-</span><span class="n">n</span><span class="p">:]</span>
+
+<span class="k">class</span> <span class="nc">CrossSectionalMR</span><span class="p">(</span><span class="n">bt</span><span class="p">.</span><span class="n">Strategy</span><span class="p">):</span>
+    <span class="n">params</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="p">(</span><span class="s">'n'</span><span class="p">,</span> <span class="mi">100</span><span class="p">),</span>
+    <span class="p">)</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">inds</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">d</span> <span class="ow">in</span> <span class="bp">self</span><span class="p">.</span><span class="n">datas</span><span class="p">:</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"pct"</span><span class="p">]</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">indicators</span><span class="p">.</span><span class="n">PercentChange</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">close</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+            <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">"std"</span><span class="p">]</span> <span class="o">=</span> <span class="n">bt</span><span class="p">.</span><span class="n">indicators</span><span class="p">.</span><span class="n">StandardDeviation</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">close</span><span class="p">,</span> <span class="n">period</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prenext</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="nb">next</span><span class="p">()</span>
+    
+    <span class="k">def</span> <span class="nf">next</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">available</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">filter</span><span class="p">(</span><span class="k">lambda</span> <span class="n">d</span><span class="p">:</span> <span class="nb">len</span><span class="p">(</span><span class="n">d</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">5</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">datas</span><span class="p">))</span> <span class="c1"># only look at data that existed last week
+</span>        <span class="n">rets</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">available</span><span class="p">))</span>
+        <span class="n">stds</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">available</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">available</span><span class="p">):</span>
+            <span class="n">rets</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">'pct'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+            <span class="n">stds</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">inds</span><span class="p">[</span><span class="n">d</span><span class="p">][</span><span class="s">'std'</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">market_ret</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="n">rets</span><span class="p">)</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">rets</span> <span class="o">-</span> <span class="n">market_ret</span><span class="p">)</span>
+        <span class="n">max_weights_index</span> <span class="o">=</span> <span class="n">max_n</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nb">abs</span><span class="p">(</span><span class="n">weights</span><span class="p">),</span> <span class="bp">self</span><span class="p">.</span><span class="n">params</span><span class="p">.</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">low_volality_index</span> <span class="o">=</span> <span class="n">min_n</span><span class="p">(</span><span class="n">stds</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">params</span><span class="p">.</span><span class="n">n</span><span class="p">)</span>
+        <span class="n">selected_weights_index</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">intersect1d</span><span class="p">(</span><span class="n">max_weights_index</span><span class="p">,</span>
+                                                <span class="n">low_volality_index</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">selected_weights_index</span><span class="p">):</span>
+            <span class="c1"># no good trades today
+</span>            <span class="k">return</span>
+            
+        <span class="n">selected_weights</span> <span class="o">=</span> <span class="n">weights</span><span class="p">[</span><span class="n">selected_weights_index</span><span class="p">]</span>
+        <span class="n">weights</span> <span class="o">=</span> <span class="n">weights</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="nb">sum</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="nb">abs</span><span class="p">(</span><span class="n">selected_weights</span><span class="p">))</span>      
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">d</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">available</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">selected_weights_index</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">order_target_percent</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="n">target</span><span class="o">=</span><span class="n">weights</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="bp">self</span><span class="p">.</span><span class="n">order_target_percent</span><span class="p">(</span><span class="n">d</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>As we can see above, we select the stocks to trade by computing the intersection between the maximal weight stocks and the minimal standard deviation stocks. Let’s backtest it!</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">dd</span><span class="p">,</span> <span class="n">cagr</span><span class="p">,</span> <span class="n">sharpe</span> <span class="o">=</span> <span class="n">backtest</span><span class="p">(</span><span class="n">datas</span><span class="p">,</span> <span class="n">CrossSectionalMR</span><span class="p">,</span> <span class="n">plot</span><span class="o">=</span><span class="bp">True</span><span class="p">,</span> <span class="n">n</span><span class="o">=</span><span class="mi">100</span><span class="p">)</span>
+<span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Max Drawdown: </span><span class="si">{</span><span class="n">dd</span><span class="p">:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%</span><span class="se">\n</span><span class="s">APR: </span><span class="si">{</span><span class="n">cagr</span><span class="p">:.</span><span class="mi">2</span><span class="n">f</span><span class="si">}</span><span class="s">%</span><span class="se">\n</span><span class="s">Sharpe: </span><span class="si">{</span><span class="n">sharpe</span><span class="p">:.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-05-05-improving-cross-sectional-mean-reversion-strategy-in-python_22_0.png" alt="png" /></p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>Max Drawdown: 17.77%
+APR: 23.30%
+Sharpe: 1.668
+</code></pre></div></div>
+
+<p>The cross-sectional mean reversion strategy with volatility filter has an
+average annual return of 23.3% with a Sharpe ratio of 1.688. By these metrics
+this is our best performing algorithm so far! It is worth noting that we have
+introduced a few parameters (<em>n</em>, and the standard deviation window length) that
+we could optimize (and possibly overfit),but we will keep it as is for now. If
+you would like to experiment with my strategies for yourself, feel free to clone
+my <a href="https://github.com/teddykoker/blog/tree/master/_notebooks">notebooks</a> for
+yourself.</p>
+
+<p>It is also worth noting that, like the previous mean-reversion algorithm, we do
+not account for survivorship bias in the S&amp;P 500 over the 5 year period of our
+backtest.</p>
+
+<p>In the next post we will try live trading the strategy!  Be sure to check out
+<a href="https://amzn.to/2VptDjd">Algorithmic Trading: Winning Strategies and Their
+Rationale</a> for more strategy ideas.</p>
+
+
+<hr>
+<ol class="bibliography"></ol>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Histopathologic Cancer Detection with Transfer Learning | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="Histopathologic Cancer Detection with Transfer Learning" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In this post we will be using a method known as transfer learning in order to detect metastatic cancer in patches of images from digital pathology scans." />
+<meta property="og:description" content="In this post we will be using a method known as transfer learning in order to detect metastatic cancer in patches of images from digital pathology scans." />
+<link rel="canonical" href="https://teddykoker.com/2019/08/histopathologic-cancer-detection-with-transfer-learning/" />
+<meta property="og:url" content="https://teddykoker.com/2019/08/histopathologic-cancer-detection-with-transfer-learning/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/2019-08-12-histopathologic-cancer-detection-with-transfer-learning_4_0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-08-12T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"Histopathologic Cancer Detection with Transfer Learning","dateModified":"2019-08-12T00:00:00+00:00","datePublished":"2019-08-12T00:00:00+00:00","description":"In this post we will be using a method known as transfer learning in order to detect metastatic cancer in patches of images from digital pathology scans.","url":"https://teddykoker.com/2019/08/histopathologic-cancer-detection-with-transfer-learning/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2019/08/histopathologic-cancer-detection-with-transfer-learning/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/2019-08-12-histopathologic-cancer-detection-with-transfer-learning_4_0.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>Histopathologic Cancer Detection with Transfer Learning</h1>
+<p>Published 2019-08-12</p>
+<hr>
+<p>In this post we will be using a method known as <em>transfer learning</em> in order to detect metastatic cancer in patches of images from digital pathology scans.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="kn">import</span> <span class="nn">cv2</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s">"figure.figsize"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="c1"># (w, h)
+</span><span class="n">plt</span><span class="p">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s">"figure.dpi"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+</code></pre></div></div>
+
+<h2 id="data">Data</h2>
+
+<p>The data we will be using is located on Kaggle in the dataset <a href="https://www.kaggle.com/c/histopathologic-cancer-detection/overview">Histopathologic Cancer Detection</a>. There is a file <code class="highlighter-rouge">train_labels.csv</code> that contains all of the image names and classification labels. Let’s load the CSV file in and take a look at the first few images:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">"../data/train_labels.csv"</span><span class="p">)</span>
+<span class="n">fig</span> <span class="o">=</span> <span class="n">plt</span><span class="p">.</span><span class="n">figure</span><span class="p">(</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">8</span><span class="p">,</span><span class="mi">5</span><span class="p">))</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">9</span><span class="p">):</span>
+    <span class="n">fig</span><span class="p">.</span><span class="n">add_subplot</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">,</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">fname</span> <span class="o">=</span> <span class="sa">f</span><span class="s">"../data/train/</span><span class="si">{</span><span class="n">df</span><span class="p">.</span><span class="nb">id</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="si">}</span><span class="s">.tif"</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">imshow</span><span class="p">(</span><span class="n">cv2</span><span class="p">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">cv2</span><span class="p">.</span><span class="n">imread</span><span class="p">(</span><span class="n">fname</span><span class="p">),</span> <span class="n">cv2</span><span class="p">.</span><span class="n">COLOR_BGR2RGB</span><span class="p">))</span>
+    <span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="n">df</span><span class="p">.</span><span class="n">label</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span> <span class="n">plt</span><span class="p">.</span><span class="n">axis</span><span class="p">(</span><span class="s">"off"</span><span class="p">)</span>
+<span class="n">fig</span><span class="p">.</span><span class="n">tight_layout</span><span class="p">()</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-08-12-histopathologic-cancer-detection-with-transfer-learning_4_0.png" alt="png" /></p>
+
+<p>In this dataset, an image is marked <code class="highlighter-rouge">1</code> if the center 32x32px region contains at least one pixel of tumor tissue. Otherwise, it is marked <code class="highlighter-rouge">0</code>. To the untrained eye, it is hard to notice any specific differences between the positive and negative images. Lucky for us, our computer will do all the hard work. Before we build our model, let’s create a PyTorch DataSet that will allow us easily feed our images and labels into the model for training.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">torch.utils.data</span> <span class="kn">import</span> <span class="n">DataLoader</span><span class="p">,</span> <span class="n">Dataset</span>
+
+<span class="k">class</span> <span class="nc">HistopathologicDataset</span><span class="p">(</span><span class="n">Dataset</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">df</span><span class="p">,</span> <span class="n">datadir</span><span class="p">,</span> <span class="n">transform</span><span class="o">=</span><span class="bp">None</span><span class="p">):</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">fnames</span> <span class="o">=</span> <span class="p">[</span><span class="sa">f</span><span class="s">"</span><span class="si">{</span><span class="n">datadir</span><span class="si">}</span><span class="s">/</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s">.tif"</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">df</span><span class="p">.</span><span class="nb">id</span><span class="p">]</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">labels</span> <span class="o">=</span> <span class="n">df</span><span class="p">.</span><span class="n">label</span><span class="p">.</span><span class="n">tolist</span><span class="p">()</span>
+        <span class="bp">self</span><span class="p">.</span><span class="n">transform</span> <span class="o">=</span> <span class="n">transform</span>
+    
+    <span class="k">def</span> <span class="nf">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">fnames</span><span class="p">)</span>
+    
+    <span class="k">def</span> <span class="nf">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">index</span><span class="p">):</span>
+        <span class="n">img</span> <span class="o">=</span> <span class="n">cv2</span><span class="p">.</span><span class="n">imread</span><span class="p">(</span><span class="bp">self</span><span class="p">.</span><span class="n">fnames</span><span class="p">[</span><span class="n">index</span><span class="p">])</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="p">.</span><span class="n">transform</span><span class="p">:</span>
+            <span class="n">img</span> <span class="o">=</span> <span class="bp">self</span><span class="p">.</span><span class="n">transform</span><span class="p">(</span><span class="n">img</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">img</span><span class="p">,</span> <span class="bp">self</span><span class="p">.</span><span class="n">labels</span><span class="p">[</span><span class="n">index</span><span class="p">]</span>
+</code></pre></div></div>
+
+<h3 id="transforms">Transforms</h3>
+
+<p>Before we load our datasets, we will need to create a series of transforms. Transforms are used to convert the image into a format that our model can understand. We first ensure the image is the appropriate size, and then convert it convert it to a <code class="highlighter-rouge">Tensor</code>, which is a multi-dimensional matrix that can be used on both CPUs and GPUs. For our training set, we will use a few additional transforms that randomly flip and rotate the image. These random transforms help increase the diversity of our training set, a technique known as Data Augmentation.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">torchvision</span> <span class="kn">import</span> <span class="n">transforms</span><span class="p">,</span> <span class="n">models</span>
+
+<span class="n">normalize</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="n">Normalize</span><span class="p">([</span><span class="mf">0.485</span><span class="p">,</span> <span class="mf">0.456</span><span class="p">,</span> <span class="mf">0.406</span><span class="p">],</span> <span class="p">[</span><span class="mf">0.229</span><span class="p">,</span> <span class="mf">0.224</span><span class="p">,</span> <span class="mf">0.225</span><span class="p">])</span>
+
+<span class="n">train_transforms</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="n">Compose</span><span class="p">([</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">ToPILImage</span><span class="p">(),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">RandomHorizontalFlip</span><span class="p">(),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">RandomVerticalFlip</span><span class="p">(),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">RandomRotation</span><span class="p">(</span><span class="mi">20</span><span class="p">),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">CenterCrop</span><span class="p">((</span><span class="mi">49</span><span class="p">,</span> <span class="mi">49</span><span class="p">)),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+    <span class="n">normalize</span><span class="p">,</span>
+<span class="p">])</span>
+
+<span class="n">valid_transforms</span> <span class="o">=</span> <span class="n">transforms</span><span class="p">.</span><span class="n">Compose</span><span class="p">([</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">ToPILImage</span><span class="p">(),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">CenterCrop</span><span class="p">((</span><span class="mi">49</span><span class="p">,</span> <span class="mi">49</span><span class="p">)),</span>
+    <span class="n">transforms</span><span class="p">.</span><span class="n">ToTensor</span><span class="p">(),</span>
+    <span class="n">normalize</span><span class="p">,</span>
+<span class="p">])</span>
+</code></pre></div></div>
+
+<p>Now we can load our datasets. We will load in 80% of the images as our training dataset, and use the other 20% to evaluate the model as it trains:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">split</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="mf">0.8</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">df</span><span class="p">))</span>
+<span class="n">batch_size</span> <span class="o">=</span> <span class="mi">64</span>
+<span class="n">train_dataset</span> <span class="o">=</span> <span class="n">HistopathologicDataset</span><span class="p">(</span><span class="n">df</span><span class="p">[:</span><span class="n">split</span><span class="p">],</span> <span class="s">"../data/train"</span><span class="p">,</span> <span class="n">train_transforms</span><span class="p">)</span>
+<span class="n">valid_dataset</span> <span class="o">=</span> <span class="n">HistopathologicDataset</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">split</span><span class="p">:],</span> <span class="s">"../data/train"</span><span class="p">,</span> <span class="n">valid_transforms</span><span class="p">)</span>
+<span class="n">train_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">train_dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">)</span>
+<span class="n">valid_loader</span> <span class="o">=</span> <span class="n">DataLoader</span><span class="p">(</span><span class="n">valid_dataset</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">)</span>
+</code></pre></div></div>
+
+<h2 id="model">Model</h2>
+
+<p>Now that we have our datasets, we can build our model!</p>
+
+<h3 id="transfer-learning">Transfer Learning</h3>
+
+<p>Visual object recognition has been an ongoing problem within the computer vision community. As a result, researchers compete to produce state-of-the-art results on datasets such as <a href="http://image-net.org">ImageNet</a> which consists of millions of images in 1000 object categories. One type of neural network architecture commonly used in the challenge is a <a href="https://en.wikipedia.org/wiki/Residual_neural_network">residual neural network (ResNet)</a>, and we can load a pre-trained version with just one line!</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">resnet</span> <span class="o">=</span> <span class="n">models</span><span class="p">.</span><span class="n">resnet50</span><span class="p">(</span><span class="n">pretrained</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Now we have a model that can accurately classify images of 1000 different objects, including everything from cats, to pencils, to airplanes. How does this help us with histopathologic tissue images? In the process of learning to distinguish between the different objects in ImageNet, the middle layers of the network learn to identify different features, such as lines, curves, and other patterns that help it make a prediction in the last layer. We can use these same features on our own dataset simply by replacing the last layer with a few layers of our own. This technique is known as <em>transfer learning</em>.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">nn</span>
+    
+<span class="n">in_features</span> <span class="o">=</span> <span class="n">resnet</span><span class="p">.</span><span class="n">fc</span><span class="p">.</span><span class="n">in_features</span>
+<span class="n">num_hidden</span> <span class="o">=</span> <span class="mi">512</span>
+
+<span class="n">head</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">AdaptiveAvgPool2d</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">Flatten</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">BatchNorm1d</span><span class="p">(</span><span class="n">in_features</span><span class="p">),</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="n">in_features</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="n">num_hidden</span><span class="p">),</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">ReLU</span><span class="p">(),</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">BatchNorm1d</span><span class="p">(</span><span class="n">num_hidden</span><span class="p">),</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">Dropout</span><span class="p">(</span><span class="mf">0.5</span><span class="p">),</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">Linear</span><span class="p">(</span><span class="n">in_features</span><span class="o">=</span><span class="n">num_hidden</span><span class="p">,</span> <span class="n">out_features</span><span class="o">=</span><span class="mi">2</span><span class="p">),</span>
+<span class="p">)</span>
+
+<span class="n">model</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">Sequential</span><span class="p">(</span>
+    <span class="n">nn</span><span class="p">.</span><span class="n">Sequential</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="n">resnet</span><span class="p">.</span><span class="n">children</span><span class="p">())[:</span><span class="o">-</span><span class="mi">2</span><span class="p">]),</span>
+    <span class="n">head</span>
+<span class="p">)</span>
+</code></pre></div></div>
+
+<p>Now that we have created our model, we are ready for training.</p>
+
+<h2 id="training">Training</h2>
+
+<p>First we’ll need to specify that we’d like to use our GPU for training if possible. This will speed up the the training process by many orders of magnitude:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">device</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">device</span><span class="p">(</span><span class="s">'cuda:0'</span> <span class="k">if</span> <span class="n">torch</span><span class="p">.</span><span class="n">cuda</span><span class="p">.</span><span class="n">is_available</span><span class="p">()</span> <span class="k">else</span> <span class="s">'cpu'</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Now we’ll write a couple helper functions to train a batch of images, and compute the accuracy on the validation set:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">):</span>
+    <span class="n">total_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_loader</span><span class="p">.</span><span class="n">dataset</span><span class="p">)</span>
+    <span class="n">num_batches</span> <span class="o">=</span> <span class="n">size</span> <span class="o">//</span> <span class="n">train_loader</span><span class="p">.</span><span class="n">batch_size</span>
+    <span class="n">model</span><span class="p">.</span><span class="n">train</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">train_loader</span><span class="p">):</span>
+        <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Training: </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s">/</span><span class="si">{</span><span class="n">num_batches</span><span class="si">}</span><span class="s">"</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s">"</span><span class="se">\r</span><span class="s">"</span><span class="p">)</span>
+        
+        <span class="n">scheduler</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
+        <span class="n">images</span> <span class="o">=</span> <span class="n">images</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">optimizer</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">()</span>
+        <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">images</span><span class="p">)</span> <span class="c1"># forward pass
+</span>        <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+        <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="p">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">images</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">()</span>  <span class="c1"># backprogagation
+</span>        <span class="n">optimizer</span><span class="p">.</span><span class="n">step</span><span class="p">()</span>
+        
+    <span class="k">return</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="n">size</span>
+
+<span class="k">def</span> <span class="nf">validate</span><span class="p">(</span><span class="n">valid_loader</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">criterion</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="p">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="n">total_correct</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="n">total_loss</span> <span class="o">=</span> <span class="mf">0.0</span>
+        <span class="n">size</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">valid_loader</span><span class="p">.</span><span class="n">dataset</span><span class="p">)</span>
+        <span class="n">num_batches</span> <span class="o">=</span> <span class="n">size</span> <span class="o">//</span> <span class="n">valid_loader</span><span class="p">.</span><span class="n">batch_size</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">images</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">valid_loader</span><span class="p">):</span>
+            <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"Validation: </span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s">/</span><span class="si">{</span><span class="n">num_batches</span><span class="si">}</span><span class="s">"</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s">"</span><span class="se">\r</span><span class="s">"</span><span class="p">)</span>
+            
+            <span class="n">images</span> <span class="o">=</span> <span class="n">images</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">labels</span> <span class="o">=</span> <span class="n">labels</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">images</span><span class="p">)</span>
+            <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="n">labels</span><span class="p">)</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">preds</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="nb">max</span><span class="p">(</span><span class="n">outputs</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">total_correct</span> <span class="o">+=</span> <span class="n">torch</span><span class="p">.</span><span class="nb">sum</span><span class="p">(</span><span class="n">preds</span> <span class="o">==</span> <span class="n">labels</span><span class="p">.</span><span class="n">data</span><span class="p">)</span>
+            <span class="n">total_loss</span> <span class="o">+=</span> <span class="n">loss</span><span class="p">.</span><span class="n">item</span><span class="p">()</span> <span class="o">*</span> <span class="n">images</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+            
+        <span class="k">return</span> <span class="n">total_loss</span> <span class="o">/</span> <span class="n">size</span><span class="p">,</span> <span class="n">total_correct</span><span class="p">.</span><span class="n">double</span><span class="p">()</span> <span class="o">/</span> <span class="n">size</span>
+</code></pre></div></div>
+
+<p>Now we’ll write our main training loop. For determining the learning rate of each training batch, we’ll use a technique known as the 1 cycle policy. First outlined in Leslie Smith’s <a href="https://arxiv.org/abs/1803.09820">A disciplined approach to neural network hyper-parameters</a>, the 1 cycle policy consists of training in two steps, first going from a low to high learning rate, second going from high to low. The result of this approach is a significantly reduced training time. At the time of writing there is an open <a href="https://github.com/pytorch/pytorch/pull/21258">pull request</a> to implement the policy in PyTorch, but for now I will copy the code to <code class="highlighter-rouge">onecyclelr.py</code></p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">onecyclelr</span> <span class="kn">import</span> <span class="n">OneCycleLR</span>
+
+<span class="k">def</span> <span class="nf">fit</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">num_epochs</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">valid_loader</span><span class="p">):</span>
+    <span class="n">criterion</span> <span class="o">=</span> <span class="n">nn</span><span class="p">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>
+    <span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="p">.</span><span class="n">optim</span><span class="p">.</span><span class="n">SGD</span><span class="p">(</span><span class="n">model</span><span class="p">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">1e-3</span><span class="p">,</span> <span class="n">momentum</span><span class="o">=</span><span class="mf">0.9</span><span class="p">)</span>
+    <span class="n">scheduler</span> <span class="o">=</span> <span class="n">OneCycleLR</span><span class="p">(</span><span class="n">optimizer</span><span class="p">,</span> <span class="n">max_lr</span><span class="o">=</span><span class="mf">1e-2</span><span class="p">,</span> <span class="n">train_dl</span><span class="o">=</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">num_epochs</span><span class="o">=</span><span class="n">num_epochs</span><span class="p">)</span>
+    <span class="k">print</span><span class="p">(</span><span class="s">"epoch</span><span class="se">\t</span><span class="s">train loss</span><span class="se">\t</span><span class="s">valid loss</span><span class="se">\t</span><span class="s">accuracy"</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">):</span>
+        <span class="n">train_loss</span> <span class="o">=</span> <span class="n">train</span><span class="p">(</span><span class="n">train_loader</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">criterion</span><span class="p">,</span> <span class="n">optimizer</span><span class="p">,</span> <span class="n">scheduler</span><span class="p">)</span>
+        <span class="n">valid_loss</span><span class="p">,</span> <span class="n">valid_acc</span> <span class="o">=</span> <span class="n">validate</span><span class="p">(</span><span class="n">valid_loader</span><span class="p">,</span> <span class="n">model</span><span class="p">,</span> <span class="n">criterion</span><span class="p">)</span>
+        <span class="k">print</span><span class="p">(</span><span class="sa">f</span><span class="s">"</span><span class="si">{</span><span class="n">epoch</span><span class="si">}</span><span class="se">\t</span><span class="si">{</span><span class="n">train_loss</span><span class="p">:.</span><span class="mi">5</span><span class="n">f</span><span class="si">}</span><span class="se">\t\t</span><span class="si">{</span><span class="n">valid_loss</span><span class="p">:.</span><span class="mi">5</span><span class="n">f</span><span class="si">}</span><span class="se">\t\t</span><span class="si">{</span><span class="n">valid_acc</span><span class="p">:.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s">"</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>Now let’s train for 20 epochs. We should be able to see the training loss, validation loss, and accuracy improve with each epoch:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">model</span> <span class="o">=</span> <span class="n">model</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+<span class="n">fit</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="mi">20</span><span class="p">,</span> <span class="n">train_loader</span><span class="p">,</span> <span class="n">valid_loader</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>epoch	train loss	valid loss	accuracy
+0	0.34798		0.27957		0.884
+1	0.28280		0.26708		0.890
+2	0.26309		0.22680		0.910
+3	0.24658		0.21298		0.915
+4	0.23179		0.21183		0.916
+5	0.21783		0.19479		0.925
+6	0.20712		0.22531		0.910
+7	0.19530		0.19304		0.926
+8	0.18516		0.19552		0.924
+9	0.17654		0.19245		0.924
+10	0.16677		0.19898		0.924
+11	0.15686		0.20403		0.920
+12	0.14875		0.19843		0.923
+13	0.13865		0.17180		0.934
+14	0.12790		0.17552		0.937
+15	0.11589		0.17024		0.939
+16	0.10216		0.16268		0.943
+17	0.08672		0.16580		0.944
+18	0.07534		0.16721		0.945
+19	0.06741		0.16350		0.946
+</code></pre></div></div>
+
+<p>We can see that as the model trained, we achieved an accuracy of almost 95% in the validation set! Just like my <a href="2019/07/predicting-academic-collaboration-with-logistic-regression/">last post</a>, a better way of evaluating a model’s diagnostic ability is by using the area under the <a href="https://en.wikipedia.org/wiki/Receiver_operating_characteristic">ROC</a> curve:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">roc_curve</span><span class="p">,</span> <span class="n">auc</span>
+
+<span class="k">def</span> <span class="nf">results</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">valid_loader</span><span class="p">):</span>
+    <span class="n">model</span><span class="p">.</span><span class="nb">eval</span><span class="p">()</span>
+    <span class="n">preds</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">actual</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="p">.</span><span class="n">no_grad</span><span class="p">():</span>
+         <span class="k">for</span> <span class="n">images</span><span class="p">,</span> <span class="n">labels</span> <span class="ow">in</span> <span class="n">valid_loader</span><span class="p">:</span>
+            <span class="n">outputs</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">images</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">))</span>
+            <span class="n">preds</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">outputs</span><span class="p">.</span><span class="n">cpu</span><span class="p">()[:,</span><span class="mi">1</span><span class="p">].</span><span class="n">numpy</span><span class="p">())</span>
+            <span class="n">actual</span><span class="p">.</span><span class="n">append</span><span class="p">(</span><span class="n">labels</span><span class="p">.</span><span class="n">numpy</span><span class="p">())</span>
+    <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">preds</span><span class="p">),</span> <span class="n">np</span><span class="p">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">actual</span><span class="p">)</span>
+
+<span class="n">preds</span><span class="p">,</span> <span class="n">actual</span> <span class="o">=</span> <span class="n">results</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">valid_loader</span><span class="p">)</span>
+<span class="n">fpr</span><span class="p">,</span> <span class="n">tpr</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">roc_curve</span><span class="p">(</span><span class="n">actual</span><span class="p">,</span> <span class="n">preds</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">linestyle</span><span class="o">=</span><span class="s">'--'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">fpr</span><span class="p">,</span> <span class="n">tpr</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s">"ROC curve (area = </span><span class="si">{</span><span class="n">auc</span><span class="p">(</span><span class="n">fpr</span><span class="p">,</span> <span class="n">tpr</span><span class="p">):.</span><span class="mi">3</span><span class="n">f</span><span class="si">}</span><span class="s">)"</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'False Positive Rate'</span><span class="p">);</span> <span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'True Positive Rate'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">'Receiver Operating Characteristics'</span><span class="p">);</span> <span class="n">plt</span><span class="p">.</span><span class="n">legend</span><span class="p">();</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-08-12-histopathologic-cancer-detection-with-transfer-learning_31_0.png" alt="png" /></p>
+
+<p>We achieved an area under the ROC curve of 0.986 (best possible being 1.0), all by adding a few layers to a pre-trained model! This example serves as a testament as to how well transfer learning applied, even on data that is very different than the original model was trained on. The best part is, the same code can be used to apply transfer learning to a completely different image classification task. Feel free to copy my <a href="">notebook</a> and try it for yourself!</p>
+
+<hr>
+<ol class="bibliography"></ol>
+
+</div>
+</body>
+</html>
