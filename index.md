@@ -24,8 +24,8 @@ I am broadly interested in machine learning and its applications to the computat
 *Higher-Order Equivariant Neural Networks
 for Charge Density Prediction in Materials*<br>
 Teddy Koker, Keegan Quigley, Eric Taw, Kevin Tibbetts, Lin Li.<br>
-In Review. Also at NeurIPS AI for Science Workshop, 2023.<br>
-[arXiv](https://arxiv.org/abs/2312.05388) / [Code](https://github.com/AIforGreatGood/charge3net)
+npj Computational Materials, 2024. Also at NeurIPS AI for Science Workshop, 2023.<br>
+[Publication](https://www.nature.com/articles/s41524-024-01343-1) / [arXiv](https://arxiv.org/abs/2312.05388) / [Code](https://github.com/AIforGreatGood/charge3net)
 
 <br>
 *Encoding Time-Series Explanations through Self-Supervised Model Behavior Consistency*<br>
