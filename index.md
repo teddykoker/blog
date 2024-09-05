@@ -7,18 +7,16 @@ layout: page
 
 # Teddy Koker
 
+I am a first-year PhD student at [MIT EECS](https://www.eecs.mit.edu/), advised by Professor [Tess Smidt](https://blondegeek.github.io/).
 
-I am currently a machine learning researcher at [MIT Lincoln Laboratory](https://www.ll.mit.edu/), where I am a member of the [Artificial Intelligence Technology](https://www.ll.mit.edu/r-d/technology-office/artificial-intelligence-technology) group.
-I will be starting a PhD in Electrical Engineering and Computer Science at [Massachusetts Institute of Technology](https://www.eecs.mit.edu/) in September 2024.
-
-Previously, I have worked at [Lightning AI](https://lightning.ai/) and [Harvard Medical School](https://hms.harvard.edu/).
+Previously, I have worked at [MIT Lincoln Laboratory](https://www.ll.mit.edu/), [Lightning AI](https://lightning.ai/) and [Harvard Medical School](https://hms.harvard.edu/).
 
 [Email](mailto:teddy.koker@gmail.com) / [CV](/koker_cv.pdf) / [Github](https://github.com/teddykoker) / [Google Scholar](https://scholar.google.com/citations?user=br990A8AAAAJ) / [Twitter](https://twitter.com/teddykoker)
 
 
 ## Research
 
-I am broadly interested in machine learning and its applications to the computational sciences. My most recent work focuses on deep learning within the field of computational materials science.
+I am broadly interested in machine learning and its applications to the computational sciences. My most recent work focuses on deep learning within the field of computational chemistry and materials science.
 
 <br>
 *Higher-Order Equivariant Neural Networks
