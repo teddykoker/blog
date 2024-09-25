@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Performers: The Kernel Trick, Random Fourier Features, and Attention | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="Performers: The Kernel Trick, Random Fourier Features, and Attention" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Google AI recently released a paper, Rethinking Attention with Performers (Choromanski et al., 2020), which introduces Performer, a Transformer architecture which estimates the full-rank-attention mechanism using orthogonal random features to approximate the softmax kernel with linear space and time complexity. In this post we will investigate how this works, and how it is useful for the machine learning community." />
+<meta property="og:description" content="Google AI recently released a paper, Rethinking Attention with Performers (Choromanski et al., 2020), which introduces Performer, a Transformer architecture which estimates the full-rank-attention mechanism using orthogonal random features to approximate the softmax kernel with linear space and time complexity. In this post we will investigate how this works, and how it is useful for the machine learning community." />
+<link rel="canonical" href="https://teddykoker.com/2020/11/performers/" />
+<meta property="og:url" content="https://teddykoker.com/2020/11/performers/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/iid_vs_ortho.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-11-11T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"Performers: The Kernel Trick, Random Fourier Features, and Attention","dateModified":"2020-11-11T00:00:00+00:00","datePublished":"2020-11-11T00:00:00+00:00","description":"Google AI recently released a paper, Rethinking Attention with Performers (Choromanski et al., 2020), which introduces Performer, a Transformer architecture which estimates the full-rank-attention mechanism using orthogonal random features to approximate the softmax kernel with linear space and time complexity. In this post we will investigate how this works, and how it is useful for the machine learning community.","url":"https://teddykoker.com/2020/11/performers/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2020/11/performers/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/iid_vs_ortho.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>Performers: The Kernel Trick, Random Fourier Features, and Attention</h1>
+<p>Published 2020-11-11</p>
+<hr>
+<p>Google AI recently released a paper, <em>Rethinking Attention with Performers</em>
+<a class="citation" href="#choromanski2020rethinking">(Choromanski et al., 2020)</a>, which introduces <em>Performer</em>, a Transformer
+architecture which estimates the full-rank-attention mechanism using orthogonal
+random features to approximate the softmax kernel with linear space and time
+complexity. In this post we will investigate how this works, and how it is
+useful for the machine learning community.</p>
+
+<!--more-->
+
+<h2 id="the-kernel-trick">The Kernel Trick</h2>
+
+<p>Before we talk about Attention, it is important to understand the <a href="https://en.wikipedia.org/wiki/Kernel_method#Mathematics:_the_kernel_trick">kernel
+trick</a>.
+Gregory Gundersen gives a great explanation on his
+<a href="http://gregorygundersen.com/blog/2019/12/10/kernel-trick/">blog</a>, but we will go over a
+brief summary here. This section is not completely necessary for understanding
+<em>Performers</em>, but might provide some helpful context.</p>
+
+<p>Say we have some data $x \in \mathbb{R}^2$:</p>
+
+<p><img src="/images/circles.png" alt="circles" /></p>
+
+<p>We can see that this data is not linearly separable, i.e. if we wanted to fit a
+logistic regression or linear support vector machine (SVM) to the data we
+wouldn’t be able to. How do we get around this? We can map the data into a
+higher dimension, say $\mathbb{R}^3$, using a function 
+$\varphi : \mathbb{R}^2 \mapsto \mathbb{R}^3$:</p>
+
+\[\varphi \left(\begin{bmatrix} x_1 \\ x_2 \end{bmatrix} \right)
+ = \begin{bmatrix} x_1^2 \\ x_2^2 \\ \sqrt{2}x_1 x_2 \end{bmatrix}\]
+
+<p>This function $\varphi$ is known as the <a href="https://en.wikipedia.org/wiki/Polynomial_kernel">polynomial
+kernel</a> of degree $d=2$. If we
+apply it to our data, $x$, we can visualize that it becomes linearly separable:</p>
+
+<p><img src="/images/poly_circles.png" alt="poly circles" /></p>
+
+<p>Now we can recall the expression for fitting a linear SVM:</p>
+
+\[\text{maximize} \quad f(c) = \sum_n^N c_n - \frac{1}{2} 
+\sum_i^N \sum_j^N c_i c_j y_i y_j (\textcolor{blue}{x_i^\top x_j})\]
+
+<p>Don’t worry if this expression is unfamiliar, just note that we are computing a
+dot product between two samples $\textcolor{blue}{x_i^\top x_j}$, and repeating
+this process many times.
+If we want to use our kernel function $\varphi$ so that the data is linearly seperable,
+we can simple wrap each $x_n$ with $\varphi$ to map it into a higher dimension:</p>
+
+\[\text{maximize} \quad f(c) = \sum_n^N c_n - \frac{1}{2} 
+\sum_i^N \sum_j^N c_i c_j y_i y_j (\textcolor{blue}{\varphi(x_i)^\top \varphi(x_j)})\]
+
+<p>Now we could stop here, but we can make this more efficient. What we have so far
+requires computing $\varphi(x_n)$, $N$ times, and the dot-product
+$\varphi(x_i)^\top \varphi(x_j)$, $N^2$ times, which could start becoming very
+computationally expensive, especially with kernel functions that map to very
+high dimensions. How do we get around this? This is where the <strong>kernel trick</strong> comes
+in. Suppose we had a function $K : \mathbb{R}^2 \times \mathbb{R}^2 \mapsto \mathbb{R}$
+where:</p>
+
+\[K(x_i, x_j) = \varphi(x_i)^\top \varphi(x_j)\]
+
+<p>If we can find a $K$ that performs this operation in a lower dimensional space,
+we can save potentially great amounts of compute. For the polynomial kernel
+$\varphi$ defined above, finding $K$ is fairly straight forward (derivation is
+left as an exercise to the reader):</p>
+
+\[K(x_i, x_j) = (x_i^\top x_j)^2 = \varphi(x_i)^\top \varphi(x_j)\]
+
+<p>We are now doing the dot-product in lower dimensional space, but we will get the
+same result as performing the dot-product after the projection. This means we
+can rewrite our linear SVM expression one more time:</p>
+
+\[\text{maximize} \quad f(c) = \sum_n^N c_n - \frac{1}{2} 
+\sum_i^N \sum_j^N c_i c_j y_i y_j \textcolor{blue}{K(x_i, x_j)}\]
+
+<p>Now instead of doing a dot product in $\mathbb{R}^3$, we are doing it in
+$\mathbb{R}^2$. This might not make much of an impact in terms of computational
+cost in this case, but it can make a much bigger difference with more complex
+kernel functions and higher dimensional data. Next, we will see how <strong>Random
+Fourier Features</strong> can reduce the computational cost of some kernel functions <em>even more</em>.</p>
+
+<h2 id="random-fourier-features">Random Fourier Features</h2>
+
+<p>In <em>Random Features for Large-Scale Kernel Machines</em> <a class="citation" href="#rahimi2007random">(Rahimi &amp; Recht, 2007)</a>
+(which won the NIPS “Test of Time” award in 2017, ten years after it was
+published), they set out to approximate $K$ using a randomized feature map 
+$z: \mathbb{R}^L \mapsto \mathbb{R}^R$:</p>
+
+\[K(x_i, x_j) = \varphi(x_i)^\top \varphi(x_j) \approx z(x_i)^\top z(x_j)\]
+
+<p>Specifically, they prove theoretically that the Gaussian or <a href="https://en.wikipedia.org/wiki/Radial_basis_function_kernel">RBF
+kernel</a>:</p>
+
+\[K_\text{gauss}(x_i, x_j) = \exp(-\gamma \lVert x_i - x_j \rVert^2)\]
+
+<p>Can be approximated by sampling $z$ from the Fourier transformation. Concretely,
+one way we can write this as is:</p>
+
+\[z_\omega(x) = \begin{bmatrix} \cos(\omega^\top x) \\ 
+\sin(\omega^\top x) \end{bmatrix}\]
+
+<p>Where $\omega \sim \mathcal{N}_ R(0, I) $ is sampled from a spherical Gaussian.
+With this approximation, the dot-product no longer needs to be performed in
+$\mathbb{R}^L$ space, it can now be performed in $\mathbb{R}^R$ space, where
+$R \ll L$. How is this useful? <strong>Using Random Fourier Features, we can
+approximate any function $K$ that can be written in terms of $K_\text{gauss}$.</strong></p>
+
+<h2 id="attention">Attention</h2>
+
+<p>In a <a href="/2020/02/nlp-from-scratch-annotated-attention/">previous blog post</a>, we went over
+the <em>self-attention</em> mechanism, an how it was introduced for language
+translation. Nowadays, most language models use <em>scaled-dot-product attention</em> as
+defined in the <em>Transformers</em> paper <a class="citation" href="#vaswani2017attention">(Vaswani et al., 2017)</a>:</p>
+
+\[\text{Attention}(Q, K, V) =
+\text{softmax} \left( \frac{QK^\top}{\sqrt{d}}\right) V\]
+
+<p>Where $Q, K, V \in \mathbb{R}^{L \times d}$, $L$ is the sequence length, and $d$
+is some hidden dimension. We can expand the $\text{softmax}$ and rewrite
+the expression as the following:</p>
+
+\[\text{Attention}(Q, K, V) = D^{-1}AV, \quad
+A = \exp(QK^\top/\sqrt{d}), \quad
+D = \text{diag}(A 1_L)\]
+
+<p>Where $1_L$ is a vector of ones of length $L$. In Python this looks like:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">attention</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">):</span>
+    <span class="n">l</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">shape</span>
+    <span class="n">a</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">exp</span><span class="p">(</span><span class="n">q</span> <span class="o">@</span> <span class="n">k</span><span class="p">.</span><span class="n">T</span> <span class="o">*</span> <span class="p">(</span><span class="n">d</span> <span class="o">**</span> <span class="o">-</span><span class="mf">0.5</span><span class="p">))</span>
+    <span class="n">d_inv</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">diag</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">a</span> <span class="o">@</span> <span class="n">np</span><span class="p">.</span><span class="n">ones</span><span class="p">(</span><span class="n">l</span><span class="p">)))</span>
+    <span class="k">return</span> <span class="n">d_inv</span> <span class="o">@</span> <span class="n">a</span> <span class="o">@</span> <span class="n">v</span>
+</code></pre></div></div>
+
+<p>This $\text{Attention}$ method has some limitations however; if we
+examine the attention matrix, $A$, we will realize it is of shape $\mathbb{R}^{L
+\times L}$, meaning that any operation performed with $A$ will have a time
+and space complexity that grows <strong>quadratically</strong> with respect to the sequence
+length $L$. This puts a limitation on the maximum sequence length that can be
+used with the Transformer, which means they are not usable for many tasks that
+may require much longer sequence lengths, such as dialog, protein sequences, and
+images.</p>
+
+<p>Over the past few months, many have developed their own “X-former” to
+reduce this complexity, and this is becoming a growing area of research; for a
+full survey see <a class="citation" href="#tay2020efficient">(Tay et al., 2020)</a>.</p>
+
+<h2 id="performer">Performer</h2>
+
+<h3 id="softmax-kernel">Softmax Kernel</h3>
+
+<p>The <em>Performer</em> <a class="citation" href="#choromanski2020rethinking">(Choromanski et al., 2020)</a>  seeks to reduce the
+complexity of Attention using random Fourier features. Using the equation above,
+we can factor out the normalization component, $\sqrt{d}$, in the
+computation of $A$:</p>
+
+\[A = \exp \left(
+\frac{Q}{\sqrt[4]{d}}
+\left( \frac{K}{\sqrt[4]{d}} \right)^\top
+\right)\]
+
+<p>As we continue, we will assume that this normalization is applied beforehand, so
+we can rewrite as simply:</p>
+
+\[A = \exp(QK^\top)\]
+
+<p>Now lets say we define a softmax kernel, $K_\text{softmax} : \mathbb{R}^d \times
+\mathbb{R}^d \mapsto \mathbb{R}$ as:</p>
+
+\[K_\text{softmax}(x_i, x_j) = \exp(x_i^\top x_j)\]
+
+<p>Using this softmax kernel, we can rewrite the computation of any element within
+$A$:</p>
+
+\[A(i, j) = K_\text{softmax}(q_i^\top,k_j^\top)\]
+
+<p>Where $q_i$, $k_j$, represent the $i^\text{th}$,
+$j^\text{th}$ row vector in $Q$, $K$, respectively.</p>
+
+<p>Since the attention matrix is now written as the output of a kernel function $K_\text{softmax}$,
+we could potentially approximate it at a <strong>lower dimensionality</strong> as we did for the Gaussian kernel above
+feature mapping $z: \mathbb{R}^L \mapsto \mathbb{R}^R$:</p>
+
+\[K_{softmax}(x_i, x_j) \approx z(x_i)^\top z(x_j)\]
+
+<p><em>Note: <a class="citation" href="#choromanski2020rethinking">(Choromanski et al., 2020)</a> uses $\varphi$ to denote this random
+feature mapping, I am using $z$ for consistency.</em> Working from the definition of
+the Gaussian kernel function, we can derive $K_\text{softmax}$
+in terms of $K_\text{gauss}$:</p>
+
+\[K_\text{softmax}(x_i, x_j) =
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)
+K_\text{gauss}(x_i, x_j)
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right)\]
+
+<p>See <a href="#appendix">Appendix</a> for full derivation. With this derivation, we can
+come up with our random feature mapping $z_\omega$ that approximates
+the $K_\text{softmax}$ kernel using the Random Fourier features approximation of
+the Gaussian kernel:</p>
+
+\[z_\omega^\text{sin/cos}(x) = 
+\exp \left( \frac{\lVert x \rVert^2}{2} \right)
+\begin{bmatrix} \cos(\omega^\top x) \\ 
+\sin(\omega^\top x) \end{bmatrix}\]
+
+<p>Where, again, $\omega \sim \mathcal{N}_R(0, I)$ is sampled from a spherical
+Gaussian. <strong>Now, instead of our attention matrix $A$ being of size $\mathbb{R}^{L
+\times L}$, it is only of size $\mathbb{R}^{R \times L}$, with the sum of each
+row approximating that of it’s full-rank counterpart.</strong></p>
+
+<p>This looks quite complex at this point, but we can now write the full
+approximated attention mechanism, $\widehat{\text{Attention}}(Q, K, V)$, in Python like so:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">z_sin_cos</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">omega</span><span class="p">):</span>
+    <span class="n">sin</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="p">.</span><span class="n">sin</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
+    <span class="n">cos</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="p">.</span><span class="n">cos</span><span class="p">(</span><span class="mi">2</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">pi</span> <span class="o">*</span> <span class="n">x</span><span class="p">)</span>
+
+    <span class="n">coef</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">exp</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">square</span><span class="p">(</span><span class="n">x</span><span class="p">).</span><span class="nb">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">product</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">"...d,rd-&gt;...r"</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">omega</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">sin</span><span class="p">(</span><span class="n">product</span><span class="p">),</span> <span class="n">cos</span><span class="p">(</span><span class="n">product</span><span class="p">)],</span> <span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span>
+
+<span class="k">def</span> <span class="nf">attention_hat</span><span class="p">(</span><span class="n">q</span><span class="p">,</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span><span class="p">,</span> <span class="n">random_dim</span><span class="p">)</span>
+    <span class="n">l</span><span class="p">,</span> <span class="n">d</span> <span class="o">=</span> <span class="n">q</span><span class="p">.</span><span class="n">shape</span>
+    <span class="n">normalizer</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">d</span> <span class="o">**</span> <span class="mf">0.25</span><span class="p">)</span>               <span class="c1"># to normalize before multiplication
+</span>    <span class="n">omega</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">randn</span><span class="p">(</span><span class="n">random_dim</span><span class="p">,</span> <span class="n">d</span><span class="p">)</span>     <span class="c1"># generate i.i.d. gaussian features
+</span>    <span class="n">q_prime</span> <span class="o">=</span> <span class="n">z_sin_cos</span><span class="p">(</span><span class="n">q</span> <span class="o">*</span> <span class="n">normalizer</span><span class="p">,</span> <span class="n">omega</span><span class="p">)</span> <span class="c1"># apply feature map z to Q
+</span>    <span class="n">k_prime</span> <span class="o">=</span> <span class="n">z_sin_cos</span><span class="p">(</span><span class="n">k</span> <span class="o">*</span> <span class="n">normalizer</span><span class="p">,</span> <span class="n">omega</span><span class="p">)</span> <span class="c1"># apply feature map z to K
+</span>    <span class="c1"># rest of attention (note the order of operations is changed for efficiency)
+</span>    <span class="n">d_inv</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">diag</span><span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="p">(</span><span class="n">q_prime</span> <span class="o">@</span> <span class="p">(</span><span class="n">k_prime</span><span class="p">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">np</span><span class="p">.</span><span class="n">ones</span><span class="p">(</span><span class="n">l</span><span class="p">))))</span>
+    <span class="k">return</span> <span class="n">d_inv</span> <span class="o">@</span> <span class="p">(</span><span class="n">q_prime</span> <span class="o">@</span> <span class="p">(</span><span class="n">k_prime</span><span class="p">.</span><span class="n">T</span> <span class="o">@</span> <span class="n">v</span><span class="p">))</span>
+
+</code></pre></div></div>
+
+<h2 id="improvements">Improvements</h2>
+
+<p>Before we make any comparisons between our approximate and full-rank attention
+method, it is import to mention a couple additional improvements that the
+authors make to much better estimate the full-rank attention: Orthogonal Random
+Features, and Positive Random Features.</p>
+
+<h3 id="orthogonal-random-features">Orthogonal Random Features</h3>
+
+<p>The authors prove theoretically that using exactly orthogonal random features
+can yield an improved estimation over independent and identically distributed
+(IID) features:</p>
+
+<blockquote>
+  <p>To further reduce the variance of the estimator (so that we can use even
+smaller number of random features $R$), we entangle different random samples $\omega_1, …, \omega_R$
+to be exactly orthogonal. This can be done while maintaining
+unbiasedness whenever isotropic distributions $D$ are used (i.e. in particular in
+all kernels we considered so far) by standard Gram-Schmidt renormalization
+procedure.</p>
+</blockquote>
+
+<p>See Proof of Theorem 2 in section F.4 of the appendix in <a class="citation" href="#choromanski2020rethinking">(Choromanski et al., 2020)</a> for the proof that orthogonal random features can improve estimation.
+My code to generate orthogonal Gaussian features using Gram-Schmidt
+renormalization can be found
+<a href="https://github.com/teddykoker/performer/blob/main/performer.py#L64-L82">here</a>.</p>
+
+<h4 id="iid-vs-orthogonal-random-features">IID vs. Orthogonal Random Features</h4>
+
+<p>Using $L = 1024$, $d = 16$, we will vary the number of random features $R$
+and measure the mean-squared-error (MSE) of our estimated attention and the
+full-rank attention.</p>
+
+<p><img src="/images/iid_vs_ortho.png" alt="iid vs ortho" /></p>
+
+<p><em>Lines are mean of 15 samples, shaded region is the standard deviation. All of the
+code to reproduce these figures can be found at:
+<a href="https://github.com/teddykoker/performer">github.com/teddykoker/performer</a>.</em></p>
+
+<p>We can see that our current approximation method using $z^\text{sin/cos}$ does
+not work well when using independent and identically distributed (IID) features,
+but the estimation is quite good for orthogonal random features with a large
+enough $R$.</p>
+
+<h2 id="positive-random-features">Positive Random Features</h2>
+
+<p><a class="citation" href="#choromanski2020rethinking">(Choromanski et al., 2020)</a> also note that the random feature map
+$z^\text{sin/cos}$ can yield negative values, especially when the kernel
+outputs approach 0. This is very common for pairs with no interaction, so it can lead
+to instability in the estimation. To get around this, they propose a new random
+feature map, $z^\text{positive}$:</p>
+
+\[z_\omega^\text{positive}(x) = 
+\exp \left(- \frac{\lVert x \rVert^2}{2} \right)
+\begin{bmatrix} \exp(\omega^\top x) \end{bmatrix}\]
+
+<p>Written in Python as:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">z_positive</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">omega</span><span class="p">):</span>
+    <span class="n">coef</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">np</span><span class="p">.</span><span class="n">square</span><span class="p">(</span><span class="n">x</span><span class="p">).</span><span class="nb">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">,</span> <span class="n">keepdims</span><span class="o">=</span><span class="bp">True</span><span class="p">)</span> <span class="o">/</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">product</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">einsum</span><span class="p">(</span><span class="s">"...d,rd-&gt;...r"</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">omega</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">coef</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">exp</span><span class="p">(</span><span class="n">product</span><span class="p">)</span>
+</code></pre></div></div>
+
+<p>If we compare $z^\text{positive}$ to $z^\text{sin/cos}$, using
+orthogonal features $\omega$, we can see the improvement:</p>
+
+<p><img src="/images/trig_vs_positive.png" alt="trig_vs_positive" /></p>
+
+<p>We find that, as was theoretically proven in the paper, the $z^\text{positive}$
+feature map with random orthogonal features yields a strong estimation
+of the full-rank attention mechanism, with a time and space complexity that only
+grows <strong>linearly</strong> with respect to sequence length $L$. Ultimately, <em>Performers</em> seem to
+be a strong approach to reducing the complexity of Transformers, and show
+potential to be used in many different sub-fields of deep learning.</p>
+
+<h2 id="acknowledgements">Acknowledgements</h2>
+
+<p>Special thanks to Richard Song of Google AI for providing details around some of
+the experimentation in the paper.</p>
+
+<h2 id="appendix">Appendix</h2>
+
+<p>Derive $
+K_\text{softmax}(x_i, x_j) =
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)
+K_\text{gauss}(x_i, x_j)
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right)
+$:</p>
+
+\[K_\text{gauss}(x_i, x_j) = \exp(-\gamma \lVert x_i - x_j \rVert^2)\]
+
+<p>Let $\gamma = \frac{1}{2}$</p>
+
+\[\begin{aligned}
+
+K_\text{gauss}(x_i, x_j) &amp;= \exp \left(-\frac{1}{2} \lVert x_i - x_j \rVert^2 \right) \\
+
+&amp;= \exp \left(-\frac{1}{2} (\lVert x_i \rVert^2 + \lVert x_j \rVert^2 - 2(x_i^\top x_j)) \right) \\
+
+&amp;= \exp \left(
+  -\frac{\lVert x_i \rVert^2}{2}  
+  -\frac{\lVert x_j \rVert^2}{2} + x_i^\top x_j \right) \\
+
+&amp;= \exp \left(
+  -\frac{\lVert x_i \rVert^2}{2}  
+  -\frac{\lVert x_j \rVert^2}{2} + x_i^\top x_j \right) \\
+
+&amp;= 
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)^{-1}
+\exp (x_i^\top x_j ) 
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right)^{-1}\\
+
+
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)
+K_\text{gauss}(x_i, x_j)
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right) 
+&amp;= \exp (x_i^\top x_j) \\
+
+\exp \left( \frac{\lVert x_i \rVert^2}{2} \right)
+K_\text{gauss}(x_i, x_j)
+\exp \left( \frac{\lVert x_j \rVert^2}{2} \right) 
+&amp;= K_\text{softmax}(x_i, x_j)
+
+\end{aligned}\]
+
+
+<hr>
+<ol class="bibliography"><li><span id="choromanski2020rethinking">Choromanski, K., Likhosherstov, V., Dohan, D., Song, X., Gane, A., Sarlos, T., Hawkins, P., Davis, J., Mohiuddin, A., Kaiser, L., &amp; others. (2020). Rethinking Attention with Performers. <i>ArXiv Preprint ArXiv:2009.14794</i>.</span></li>
+<li><span id="rahimi2007random">Rahimi, A., &amp; Recht, B. (2007). Random features for large-scale kernel machines. <i>Advances in Neural Information Processing Systems</i>, <i>20</i>, 1177–1184.</span></li>
+<li><span id="vaswani2017attention">Vaswani, A., Shazeer, N., Parmar, N., Uszkoreit, J., Jones, L., Gomez, A. N., Kaiser, Ł., &amp; Polosukhin, I. (2017). Attention is all you need. <i>Advances in Neural Information Processing Systems</i>, 5998–6008.</span></li>
+<li><span id="tay2020efficient">Tay, Y., Dehghani, M., Bahri, D., &amp; Metzler, D. (2020). Efficient transformers: A survey. <i>ArXiv Preprint ArXiv:2009.06732</i>.</span></li></ol>
+
+</div>
+</body>
+</html>

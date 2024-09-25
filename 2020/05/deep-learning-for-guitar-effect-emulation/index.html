@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Deep Learning for Guitar Effect Emulation | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="Deep Learning for Guitar Effect Emulation" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Since the 1940s, electric guitarists, keyboardists, and other instrumentalists have been using effects pedals, devices that modify the sound of the original audio source. Typical effects include distortion, compression, chorus, reverb, and delay. Early effects pedals consisted of basic analog circuits, often along with vacuum tubes, which were later replaced with transistors. Although many pedals today apply effects digitally with modern signal processing techniques, many purists argue that the sound of analog pedals can not be replaced by their digital counterparts. We’ll follow a deep learning approach to see if we can use machine learning to replicate the sound of an iconic analog effect pedal, the Ibanez Tube Screamer. This post will be mostly a reproduction of the work done by Alec Wright et al. in Real-Time Guitar Amplifier Emulation with Deep Learning (Wright et al., 2020)." />
+<meta property="og:description" content="Since the 1940s, electric guitarists, keyboardists, and other instrumentalists have been using effects pedals, devices that modify the sound of the original audio source. Typical effects include distortion, compression, chorus, reverb, and delay. Early effects pedals consisted of basic analog circuits, often along with vacuum tubes, which were later replaced with transistors. Although many pedals today apply effects digitally with modern signal processing techniques, many purists argue that the sound of analog pedals can not be replaced by their digital counterparts. We’ll follow a deep learning approach to see if we can use machine learning to replicate the sound of an iconic analog effect pedal, the Ibanez Tube Screamer. This post will be mostly a reproduction of the work done by Alec Wright et al. in Real-Time Guitar Amplifier Emulation with Deep Learning (Wright et al., 2020)." />
+<link rel="canonical" href="https://teddykoker.com/2020/05/deep-learning-for-guitar-effect-emulation/" />
+<meta property="og:url" content="https://teddykoker.com/2020/05/deep-learning-for-guitar-effect-emulation/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/signal_chain.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-05-10T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"Deep Learning for Guitar Effect Emulation","dateModified":"2020-05-10T00:00:00+00:00","datePublished":"2020-05-10T00:00:00+00:00","description":"Since the 1940s, electric guitarists, keyboardists, and other instrumentalists have been using effects pedals, devices that modify the sound of the original audio source. Typical effects include distortion, compression, chorus, reverb, and delay. Early effects pedals consisted of basic analog circuits, often along with vacuum tubes, which were later replaced with transistors. Although many pedals today apply effects digitally with modern signal processing techniques, many purists argue that the sound of analog pedals can not be replaced by their digital counterparts. We’ll follow a deep learning approach to see if we can use machine learning to replicate the sound of an iconic analog effect pedal, the Ibanez Tube Screamer. This post will be mostly a reproduction of the work done by Alec Wright et al. in Real-Time Guitar Amplifier Emulation with Deep Learning (Wright et al., 2020).","url":"https://teddykoker.com/2020/05/deep-learning-for-guitar-effect-emulation/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2020/05/deep-learning-for-guitar-effect-emulation/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/signal_chain.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>Deep Learning for Guitar Effect Emulation</h1>
+<p>Published 2020-05-10</p>
+<hr>
+<p>Since the 1940s, electric guitarists, keyboardists, and other instrumentalists
+have been using <a href="https://en.wikipedia.org/wiki/Effects_unit">effects pedals</a>,
+devices that modify the sound of the original audio source. Typical effects
+include distortion, compression, chorus, reverb, and delay. Early effects pedals
+consisted of basic analog circuits, often along with vacuum tubes, which were
+later replaced with transistors. Although many pedals today apply effects
+digitally with modern signal processing techniques, many purists argue that the
+sound of analog pedals can not be replaced by their digital counterparts. We’ll
+follow a deep learning approach to see if we can use machine learning to
+replicate the sound of an iconic analog effect pedal, the <a href="https://en.wikipedia.org/wiki/Ibanez_Tube_Screamer">Ibanez Tube
+Screamer</a>. This post will be
+mostly a reproduction of the work done by Alec Wright et al. in <em>Real-Time
+Guitar Amplifier Emulation with Deep Learning</em> <a class="citation" href="#wright2020real">(Wright et al., 2020)</a>.</p>
+
+<!--more-->
+<p>The code for this model (and training data) is available here:
+<a href="https://github.com/teddykoker/pedalnet">github.com/teddykoker/pedalnet</a>.</p>
+
+<h2 id="data">Data</h2>
+
+<p>Popularized by blues guitarist Stevie Ray Vaughan, the Ibanez Tube
+Screamer is used by many well known guitarists including Gary Clark Jr.,
+The Edge (U2), Noel Gallagher (Oasis), Billie Joe Armstrong (Green Day),
+John Mayer, Eric Johnson, Carlos Santana, and many more <a class="citation" href="#ibanez">(Wikipedia, 2020)</a>. Using my
+own Ibanez TS9 Tube Screamer, we collect data by connecting the pedal to
+an audio interface and recording the output of a dataset of prerecorded
+guitar playing. The
+<a href="https://www.idmt.fraunhofer.de/en/business_units/m2d/smt/guitar.html">IDMT-SMT-Guitar</a>
+dataset contains dry signal recordings of many different electric
+guitars with both monophonic and polyphonic phrases over different
+genres and playing techniques <a class="citation" href="#kehling2014automatic">(Kehling et al., 2014)</a>. We’ll use a 5 minute subset of this
+data, and store both the original audio as well as the output of the
+pedal when the audio is passed through it. To maintain reproducibility,
+we set all of the knobs on both the pedal and audio interface to 12
+o’clock:</p>
+
+<p><img src="/images/signal_chain.png" height="400" width="auto" style="margin: 0 auto; display: block;" /></p>
+
+<h2 id="model">Model</h2>
+
+<p>Our model architecture will be nearly identical to that of <em>WaveNet: A
+Generative Model for Raw Audio</em> <a class="citation" href="#oord2016wavenet">(Oord et al., 2016)</a>. WaveNet models are able to generate
+audio that is both qualitatively and quantitatively better than more
+traditional LSTM and statistical-based models.</p>
+
+<h3 id="dilated-convolutions">Dilated Convolutions</h3>
+
+<p>The “main ingredient” of the WaveNet architecture consists of a stack of
+dilated convolutions, or <em>à trous</em>, layers. By doubling the dilation –
+increasing the spacing between each parameter in the filter – for each
+layer , the receptive field of the model grows exponentially with depth
+of the model. This allows for computationally efficient models with
+large receptive fields, which is needed for audio effect emulation.</p>
+
+<p><img src="/images/dilated_conv.png" alt="" /> Figure 3 from WaveNet: Visualization of a
+stack of <em>dilated</em> convolutional layers.</p>
+
+<h3 id="gated-activation-units">Gated Activation Units</h3>
+
+<p>Another notable feature of WaveNet architecture is the gated activation
+unit. The output of each layer is computed as:</p>
+
+\[z = \tanh \left(W_{f, k} \ast x\right) \odot \sigma \left(W_{g, k} \ast x
+\right)\]
+
+<p>where $\ast$, $\odot$, and $\sigma(\cdot)$ denote convolution,
+element-wise multiplication, and the sigmoid function, respectively.
+$W_{f, k}$ and $W_{g, k}$ are the learned convolutionial filters at
+layer $k$. This was found to produce better results than the
+traditionally used rectified linear activation unit (ReLU).</p>
+
+<h3 id="differences-from-wavenet">Differences From WaveNet</h3>
+
+<p>The WaveNet model originally quantizes 16-bit audio time samples into
+256 bins, and the model is trained to produce a probability distribution
+over these 256 possible values. In order to reduce the size of the model
+and increase its inference speed, we replace the 256 channel discrete
+output with a single continuous output. This is done by performing a
+$1 \times 1$ convolution on the concatenation of each layer’s output.</p>
+
+<h2 id="training">Training</h2>
+
+<p>To train our network, we minimize error-to-signal ratio. This is similar
+to Mean Squared Error (MSE), however the addition of the term in the
+denominator normalizes the loss with respect to the amplitude of the
+target signal:</p>
+
+\[L_\text{ESR} = \frac
+{\sum_{t} (H(y_t) - H(\hat{y}_t))^2}
+{\sum_{t} H(y_t)^2}\]
+
+<p>where $\hat{y}$ is the predicted signal, and $y$ is the original output
+of the guitar pedal. $H(\cdot)$ is a pre-emphasis filter to emphasize
+frequencies within the audible spectrum:</p>
+
+\[H(z_t) = 1 - 0.95 z_{t-1}\]
+
+<p>When selecting the number of layers and channels for the model, we find
+that a a stack of 24 layers, each with 16 channels, and a dilatation
+pattern of:</p>
+
+\[1, 2, 4,..., 256, 1, 2, 4,..., 256, 1, 2, 4, ..., 256\]
+
+<p>was capable of replicating the sound well, while being small enough to
+run in real time on a CPU. The model is then trained for 1500 epochs
+using the Adam optimizer. This takes about 2 hours on a single Nvidia
+2070 GPU.</p>
+
+<h2 id="results">Results</h2>
+
+<p>After training our network, we can listen to the models performance on
+the held-out test set. See if you can differentiate between <strong>Output A</strong>
+and <strong>Output B</strong> (you may need to wear headphones).</p>
+
+<h4 id="input-dry-signal">Input (Dry Signal)</h4>
+
+<audio src="/images/x_test_0.wav" controls="" preload="">
+</audio>
+<p><br /> <audio src="/images/x_test_1.wav" controls="" preload=""></audio></p>
+
+<h4 id="output-a">Output A</h4>
+
+<audio src="/images/y_pred_0.wav" controls="" preload="">
+</audio>
+<p><br /> <audio src="/images/y_pred_1.wav" controls="" preload=""></audio></p>
+
+<h4 id="output-b">Output B</h4>
+
+<audio src="/images/y_test_0.wav" controls="" preload="">
+</audio>
+<p><br /> <audio src="/images/y_test_1.wav" controls="" preload=""></audio></p>
+
+<details>
+<summary>Reveal Outputs</summary>
+<p>
+<br /> <b>Output A</b> is from the neural net; <b>Output B</b> is from the
+real pedal.
+</p>
+</details>
+<p><br /></p>
+
+<p>We find that the model is able to reproduce a sound nearly
+indistinguishable from the real analog pedal. Best of all, the model is
+small and efficient enough to be used in real time. Using this
+technique, many analog effect pedals can likely be modeled with just a
+few minutes of sample audio.</p>
+
+<p>As always, thank you for reading! For any questions regarding this post
+or others, feel free to reach out on twitter:
+<a href="https://twitter.com/teddykoker">@teddykoker</a>.</p>
+
+
+<hr>
+<ol class="bibliography"><li><span id="wright2020real">Wright, A., Damskägg, E.-P., Juvela, L., &amp; Välimäki, V. (2020). Real-time guitar amplifier emulation with deep learning. <i>Applied Sciences</i>, <i>10</i>(3), 766.</span></li>
+<li><span id="ibanez">Wikipedia. (2020). <i>Ibanez Tube Screamer</i>. https://en.wikipedia.org/wiki/Ibanez_Tube_Screamer</span></li>
+<li><span id="kehling2014automatic">Kehling, C., Abeßer, J., Dittmar, C., &amp; Schuller, G. (2014). Automatic Tablature Transcription of Electric Guitar Recordings by Estimation of Score-and Instrument-Related Parameters. <i>DAFx</i>, 219–226.</span></li>
+<li><span id="oord2016wavenet">Oord, A. van den, Dieleman, S., Zen, H., Simonyan, K., Vinyals, O., Graves, A., Kalchbrenner, N., Senior, A., &amp; Kavukcuoglu, K. (2016). Wavenet: A generative model for raw audio. <i>ArXiv Preprint ArXiv:1609.03499</i>.</span></li></ol>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Beating the Odds: Machine Learning for Horse Racing | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="Beating the Odds: Machine Learning for Horse Racing" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Inspired by the story of Bill Benter, a gambler who developed a computer model that made him close to a billion dollars (Chellel, 2018) betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to see if I could use machine learning to identify inefficiencies in horse racing wagering." />
+<meta property="og:description" content="Inspired by the story of Bill Benter, a gambler who developed a computer model that made him close to a billion dollars (Chellel, 2018) betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to see if I could use machine learning to identify inefficiencies in horse racing wagering." />
+<link rel="canonical" href="https://teddykoker.com/2019/12/beating-the-odds-machine-learning-for-horse-racing/" />
+<meta property="og:url" content="https://teddykoker.com/2019/12/beating-the-odds-machine-learning-for-horse-racing/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/betting.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-12-01T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"Beating the Odds: Machine Learning for Horse Racing","dateModified":"2019-12-01T00:00:00+00:00","datePublished":"2019-12-01T00:00:00+00:00","description":"Inspired by the story of Bill Benter, a gambler who developed a computer model that made him close to a billion dollars (Chellel, 2018) betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to see if I could use machine learning to identify inefficiencies in horse racing wagering.","url":"https://teddykoker.com/2019/12/beating-the-odds-machine-learning-for-horse-racing/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2019/12/beating-the-odds-machine-learning-for-horse-racing/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/betting.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>Beating the Odds: Machine Learning for Horse Racing</h1>
+<p>Published 2019-12-01</p>
+<hr>
+<p>Inspired by the story of <a href="https://en.wikipedia.org/wiki/Bill_Benter">Bill
+Benter</a>, a gambler who
+developed a computer model that made him close to a billion dollars <a class="citation" href="#gambler">(Chellel, 2018)</a>
+betting on horse races in the Hong Kong Jockey Club (HKJC), I set out to
+see if I could use machine learning to identify inefficiencies in horse
+racing wagering. <!--more--></p>
+
+<h2 id="data">Data</h2>
+
+<p>The Hong Kong Jockey Club publishes all of the results for each race on
+their <a href="https://racing.hkjc.com/racing/english/index.aspx">website</a>. I
+created a script to scrape result cards from all of the historical
+available races. After running the script I was left with a dataset of
+938 races spanning 14 months.</p>
+
+<p><img src="/images/hkjc.png" alt="" /> <em>Result card from a HKJC race.</em></p>
+
+<h2 id="feature-engineering">Feature Engineering</h2>
+
+<p>Going into this project, I had no industry knowledge about horse racing.
+Since not much information is provided with the race result cards, much
+work must be done in engineering and selecting features in order to give
+a model more predictive power. Listed below are the features being used.</p>
+
+<p><strong>Draw</strong>: Which gate the horse starts in. This is randomly assigned
+before the race. Horses starting closer to the inside of the track (draw
+1) generally perform <em>slightly</em> better.</p>
+
+<p><strong>Horse Win Percent</strong>: Horse’s win percent over the past 5 races.</p>
+
+<p><strong>Jockey Win Percent</strong>: Jockey’s win percent over the past 5 races.</p>
+
+<p><strong>Trainer Win Percent</strong>: Trainer’s win percent over the past 5 races.</p>
+
+<p><strong>Actual Weight</strong>: How much weight the horse is carrying (jockey +
+equipment).</p>
+
+<p><strong>Declared Weight</strong>: Weight of the horse.</p>
+
+<p><strong>Days Since Last Race</strong>: How many days it has been since the horse has
+last raced. A horse that had been injured in its last race may have not
+raced recently.</p>
+
+<p><strong>Mean Beyer Speed Figure</strong>: Originally introduced in <em>Picking Winners</em> <a class="citation" href="#beyer1994picking">(Beyer, 1994)</a>, the Beyer Speed Figure is system for rating a horse’s
+performance in a race that is comparable across different tracks, distances, and
+going (track conditions). This provides a way to compare horses that have not
+raced under the same circumstances. After reading Beyer’s book, I implemented
+his rating system on my data. For this feature, I calculated the mean speed
+figure over the horse’s past 5 races.</p>
+
+<p><strong>Last Figure</strong>: Speed figure of the last race the horse was in.</p>
+
+<p><strong>Best Figure at Distance</strong>: Best speed figure the horse has gotten at
+the distance of the current race.</p>
+
+<p><strong>Best Figure at Going</strong>: Best speed figure the horse has gotten at the
+track conditions of the current race.</p>
+
+<p><strong>Best Figure at Track</strong>: Best speed figure the horse has gotten at the
+track of the current race.</p>
+
+<p>Engineering more features may yield better results; Benter’s model <a class="citation" href="#benter2008computer">(Benter, 2008)</a> included many different types of features from many
+data sources.</p>
+
+<h2 id="model">Model</h2>
+
+<p>Before creating the model, it is important to understand the goal of the
+model. In order to not lose money at the race track, one must have an
+advantage over the gambling public. To do this we need a way of
+producing odds that are more accurate than public odds. For example,
+imagine the payout of horse is 5 to 1, and we have a model that
+indicates the horse’s probability of winning is 0.2, or odds of 4 to 1.
+Assuming our model is faithful, we would have an edge in this case, as
+we would be getting an expected return of $(0.2 * (5 + 1)) - 1 = 0.2$ or
+20%. How do we create such a model?</p>
+
+<p>Let’s first assume the existence of a function $R$ that provides a
+rating $R_h$ of a horse $h$, given input features $x_h \in \R^m$:</p>
+
+\[R_h = R(x_h)\]
+
+<p>Assuming a horse with a higher rating has a higher probability of
+winning, we can compute the estimated probability of horse $h$ winning,
+$\hat{p}_h$, given the ratings of all of the horses in the race:</p>
+
+\[\hat{p}_h = \frac{\exp(R_h)}{\sum_i \exp(R_i)}\]
+
+<p>Here we use the <code class="highlighter-rouge">softmax</code> function, as its outputs will always sum to 1,
+and maintain the same order as the input.</p>
+
+<p>Now that we know how we’ll compute our probabilities, we must define our
+rating function $R$. For this we will use a neural network that takes an
+input vector of length $m$ (where $m$ is the number of features), and
+outputs a single scalar value. The structure of this network consists of
+two <code class="highlighter-rouge">Fully Connected</code> layers, each followed by a <code class="highlighter-rouge">ReLU</code>,
+<code class="highlighter-rouge">Batch Normalization</code> and <code class="highlighter-rouge">Dropout</code> layer. Lastly, there is a final
+fully connected layer to produce the single output.</p>
+
+<p>Now we can visualize our model:</p>
+
+<p><img src="/images/horse_probs.png" alt="" /></p>
+
+<h3 id="training">Training</h3>
+
+<p>We have defined our model, but how do we train it? For each race, let’s
+call the winning horse $w$. If we had a perfect model, the predicted
+probability of $w$ winning should be 1, that is $\hat{p}_w = 1$. We can
+encourage the model to approach this value by defining a loss function
+I’ll call win-log-loss:</p>
+
+\[L(\hat{p}_w) = -\log(\hat{p}_w)\]
+
+<p>Win-log-loss will approaches 0 as the win-probability of the winner
+approaches 1, and approaches $\infty$ as the win-probability of the
+winner approaches 0. Now by minimizing win-log-loss via stochastic
+gradient descent, we can optimize the predictive ability of our model.</p>
+
+<p>It is important to mention that this method is different than a binary
+classification. Since the ratings for each horse in a race are
+calculated using a shared rating network and then converted to
+probabilities with softmax, we simultaneously reward a high rating from
+the winner while penalizing high ratings from the losers. This technique
+is similar to a <a href="https://en.wikipedia.org/wiki/Siamese_neural_network">Siamese Neural
+Network</a>, which is
+often used for facial recognition.</p>
+
+<h2 id="betting">Betting</h2>
+
+<p>Now that we have predicted win probabilities for each horse in the race
+we must come up with a method of placing bets on horses. We can compute
+our own private odds for each horse using $1/\hat{p} - 1$. Now we
+<em>could</em> just bet on every horse whose odds exceed our private odds, but
+this may lead to betting on horses with a very low chance of winning. To
+prevent this, we will only bet on horses whose odds exceed our private
+odds, <strong>and</strong> whose odds are less then a certain threshold, which we
+will find the optimal value of over on our validation set.</p>
+
+<h2 id="results">Results</h2>
+
+<p>We split the scraped race data chronologically into a training,
+validation, and test set, ensuring there would be no lookahead-bias. We
+then fit the horse-rating model to our training set, checking its
+generalization to the validation set:</p>
+
+<p><img src="/images/horse_train.png" alt="" /></p>
+
+<p>After fitting the model, we find the optimal betting threshold on the
+validation set, in this case odds of <code class="highlighter-rouge">4.9</code>. We can now display our
+simulated results of betting 10 dollars on each horse that our model
+indicates. To compare, we also show the results of betting 10 dollars
+every race on the horse with the best odds, and one of the best
+strategies there is, not betting at all.</p>
+
+<p><img src="/images/betting.png" alt="" /></p>
+
+<p>We can see that always betting on the horse with the best odds is a
+sure-fire way to lose all your money. While the model was profitable
+over both the training and validation sets, it is hard to say for sure
+how reliable it is because of the very low frequency of its betting.</p>
+
+<p>Benter claimed that his era was a “Golden Age” for computer betting
+systems, where computer technology had only recently become affordable
+and powerful enough to implement such systems. Today, the betting market
+has likely become much more efficient with large numbers of computer
+handicappers and more detailed information available to the public.
+Nevertheless, developing a profitable model, especially with modern
+machine learning methods, may be a feasible task.</p>
+
+<hr>
+<ol class="bibliography"><li><span id="gambler">Chellel, K. (2018). <i>The Gambler Who Cracked the Horse-Racing Code</i>. https://www.bloomberg.com/news/features/2018-05-03/the-gambler-who-cracked-the-horse-racing-code</span></li>
+<li><span id="beyer1994picking">Beyer, A. (1994). <i>Picking Winners: A Horseplayer’s Guide</i>. Houghton Mifflin Harcourt.</span></li>
+<li><span id="benter2008computer">Benter, W. (2008). Computer based horse race handicapping and wagering systems: A report. In <i>Efficiency of racetrack betting markets</i> (pp. 183–198). World Scientific.</span></li></ol>
+
+</div>
+</body>
+</html>

@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en"><head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1"><!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Trading with Reinforcement Learning in Python Part II: Application | Teddy Koker</title>
+<meta name="generator" content="Jekyll v4.0.1" />
+<meta property="og:title" content="Trading with Reinforcement Learning in Python Part II: Application" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="In my last post we learned what gradient ascent is, and how we can use it to maximize a reward function. This time, instead of using mean squared error as our reward function, we will use the Sharpe Ratio. We can use reinforcement learning to maximize the Sharpe ratio over a set of training data, and attempt to create a strategy with a high Sharpe ratio when tested on out-of-sample data." />
+<meta property="og:description" content="In my last post we learned what gradient ascent is, and how we can use it to maximize a reward function. This time, instead of using mean squared error as our reward function, we will use the Sharpe Ratio. We can use reinforcement learning to maximize the Sharpe ratio over a set of training data, and attempt to create a strategy with a high Sharpe ratio when tested on out-of-sample data." />
+<link rel="canonical" href="https://teddykoker.com/2019/06/trading-with-reinforcement-learning-in-python-part-ii-application/" />
+<meta property="og:url" content="https://teddykoker.com/2019/06/trading-with-reinforcement-learning-in-python-part-ii-application/" />
+<meta property="og:site_name" content="Teddy Koker" />
+<meta property="og:image" content="https://teddykoker.com/images/2019-06-04-trading-with-reinforcement-learning-in-python-part-ii-application_40_0.png" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2019-06-04T00:00:00+00:00" />
+<script type="application/ld+json">
+{"headline":"Trading with Reinforcement Learning in Python Part II: Application","dateModified":"2019-06-04T00:00:00+00:00","datePublished":"2019-06-04T00:00:00+00:00","description":"In my last post we learned what gradient ascent is, and how we can use it to maximize a reward function. This time, instead of using mean squared error as our reward function, we will use the Sharpe Ratio. We can use reinforcement learning to maximize the Sharpe ratio over a set of training data, and attempt to create a strategy with a high Sharpe ratio when tested on out-of-sample data.","url":"https://teddykoker.com/2019/06/trading-with-reinforcement-learning-in-python-part-ii-application/","mainEntityOfPage":{"@type":"WebPage","@id":"https://teddykoker.com/2019/06/trading-with-reinforcement-learning-in-python-part-ii-application/"},"@type":"BlogPosting","image":"https://teddykoker.com/images/2019-06-04-trading-with-reinforcement-learning-in-python-part-ii-application_40_0.png","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+<link rel="stylesheet" href="/assets/main.css">
+  <link rel="stylesheet" href="/assets/trac.css"><link type="application/atom+xml" rel="alternate" href="https://teddykoker.com/feed.xml" title="Teddy Koker" /><script async src="https://www.googletagmanager.com/gtag/js?id=UA-138897125-1"></script>
+<script>
+  window['ga-disable-UA-138897125-1'] = window.doNotTrack === "1" || navigator.doNotTrack === "1" || navigator.doNotTrack === "yes" || navigator.msDoNotTrack === "1";
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){window.dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'UA-138897125-1');
+</script>
+<link rel="shortcut icon" href="/favicon.png">
+
+  <!-- Katex Math (use defer to speed page load) -->
+  <link rel="stylesheet"
+        href="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.css"
+        integrity="sha384-zB1R0rpPzHqg7Kpt0Aljp8JPLqbXI3bhnPWROx27a9N0Ll6ZP/+DiW/UqRcLbRjq"
+        crossorigin="anonymous">
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/katex.min.js"
+          integrity="sha384-y23I5Q6l+B6vatafAwxRu/0oK/79VlbSz7Q9aiSZUvyWYIYsd+qj+o24G5ZU2zJz"
+          crossorigin="anonymous"></script>
+  <script defer
+          src="https://cdn.jsdelivr.net/npm/katex@0.11.1/dist/contrib/auto-render.min.js"
+          integrity="sha384-kWPLUVMOks5AQFrykwIup5lo0m3iMkkHrD0uJ4H5cjeGihAutqP0yW0J6dpFiVkI"
+          crossorigin="anonymous"
+          onload='renderMathInElement(document.body,{delimiters: [{left: "\\[",
+          right: "\\]", display: true}, {left: "$", right: "$", display: false}]})'></script>
+</head>
+</head>
+<body>
+<div class='content'><div class='nav'>
+    <ul>
+        <li><a href='/'>Teddy Koker</a></li>
+        <li><a href='/writing'>Writing</a></li>
+    </ul>
+</div>
+<h1>Trading with Reinforcement Learning in Python Part II: Application</h1>
+<p>Published 2019-06-04</p>
+<hr>
+<p>In my <a href="/2019/05/trading-with-reinforcement-learning-in-python-part-i-gradient-ascent/">last post</a> we learned what gradient ascent is, and how we can use it to maximize a reward function. This time, instead of using mean squared error as our reward function, we will use the Sharpe Ratio. We can use reinforcement learning to maximize the Sharpe ratio over a set of training data, and attempt to create a strategy with a high Sharpe ratio when tested on out-of-sample data.</p>
+
+<h2 id="sharpe-ratio">Sharpe Ratio</h2>
+
+<p>The Sharpe ratio is a commonly used indicator to measure the risk adjusted performance of an investment over time. Assuming a risk-free rate of 0, the formula for computing Sharpe ratio is simply the mean returns of the investment divided by the standard deviation of the returns. This can be written as:</p>
+
+\[S _T = {A \over \sqrt{B - A^2}}\]
+
+<p>where $A={1\over T}\sum\limits _{t=1}^{T}R _t$, and $B={1\over T}\sum\limits _{t=1}^{T}R _t^2$</p>
+
+<p>This can be coded in Python like so:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">sharpe_ratio</span><span class="p">(</span><span class="n">rets</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">rets</span><span class="p">.</span><span class="n">mean</span><span class="p">()</span> <span class="o">/</span> <span class="n">rets</span><span class="p">.</span><span class="n">std</span><span class="p">()</span>
+</code></pre></div></div>
+
+<h2 id="trader-function">Trader Function</h2>
+
+<p>We know that we will use the Sharpe ratio as our reward function, but how will we know when to trade? We will use the following function to determine our position, $F$, at time $t$:</p>
+
+\[F _t = \tanh(\theta^T x _t)\]
+
+<p>This function will generate a value between -1 and 1, which will tell us what percentage of the portfolio should buy or short the asset. $\theta$, like in the last post, will be the parameters we will optimize using gradient ascent, and $x_t$ will be the input vector at time $t$. For this post, we will assign the input vector as $x_t = [1, r_{t - M}, … , r_t, F_{t - 1}] $, where $r_t$ is the change in value between the asset at time $t$ and $t - 1$, and $M$ is the number of time series inputs. This means that at every time step, the model will be fed its last position and a series of historical price changes that it can use to calculate its next position. We can calculate all of the positions given price series <code class="highlighter-rouge">x</code>, and <code class="highlighter-rouge">theta</code> with the following Python function:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="n">np</span>
+
+<span class="k">def</span> <span class="nf">positions</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">theta</span><span class="p">):</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">Ft</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="n">xt</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">t</span> <span class="o">-</span> <span class="n">M</span><span class="p">:</span><span class="n">t</span><span class="p">],</span> <span class="p">[</span><span class="n">Ft</span><span class="p">[</span><span class="n">t</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]]])</span>
+        <span class="n">Ft</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">tanh</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">dot</span><span class="p">(</span><span class="n">theta</span><span class="p">,</span> <span class="n">xt</span><span class="p">))</span>
+    <span class="k">return</span> <span class="n">Ft</span>
+</code></pre></div></div>
+
+<h2 id="calculating-returns">Calculating Returns</h2>
+
+<p>Now that we know what our position will be at each time step, we can calculate our returns $R$ at each time step using the following formula:</p>
+
+\[R _t = F _{t-1}r _t - \delta | F _t - F _{t - 1}|\]
+
+<p>In this case $\delta$ is our transaction cost rate. We can code this as a function in Python like so:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">returns</span><span class="p">(</span><span class="n">Ft</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">rets</span> <span class="o">=</span> <span class="n">Ft</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">T</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">x</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">T</span><span class="p">]</span> <span class="o">-</span> <span class="n">delta</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="nb">abs</span><span class="p">(</span><span class="n">Ft</span><span class="p">[</span><span class="mi">1</span><span class="p">:</span><span class="n">T</span><span class="p">]</span> <span class="o">-</span> <span class="n">Ft</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="n">T</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span>
+    <span class="k">return</span> <span class="n">np</span><span class="p">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mi">0</span><span class="p">],</span> <span class="n">rets</span><span class="p">])</span>
+</code></pre></div></div>
+
+<p>These returns can then be used to calculate our Sharpe ratio.</p>
+
+<h1 id="gradient-ascent">Gradient Ascent</h1>
+
+<h2 id="determining-the-gradient">Determining the Gradient</h2>
+
+<p>In order to perform gradient ascent, we must compute the derivative of the Sharpe ratio with respect to theta, or ${dS _T}\over{d\theta}$ Using the chain rule and the above formulas we can write it as:</p>
+
+\[{{dS _T}\over{d\theta}} = \sum\limits_{t=1}^{T} ( {{dS _T}\over{dA}}{{dA}\over{dR _t}} + {{dS _T}\over{dB}}{{dB}\over{dR _t}}) \cdot ({{dR _t}\over{dF _t}}{{dF}\over{d\theta}} + {{dR _t}\over{dF _{t-1}}}{{dF _{t-1}}\over{d\theta}})\]
+
+<p><em>For all of the steps to compute the above derivative as well as the partial derivatives, see Gabriel Molina’s paper, <a href="http://cs229.stanford.edu/proj2006/Molina-StockTradingWithRecurrentReinforcementLearning.pdf">Stock Trading with Recurrent Reinforcement Learning (RRL)</a>.</em></p>
+
+<p>We can compute this derivative in our <code class="highlighter-rouge">gradient</code> function:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">gradient</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">delta</span><span class="p">):</span>
+    <span class="n">Ft</span> <span class="o">=</span> <span class="n">positions</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">theta</span><span class="p">)</span>
+    <span class="n">R</span> <span class="o">=</span> <span class="n">returns</span><span class="p">(</span><span class="n">Ft</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">delta</span><span class="p">)</span>
+    <span class="n">T</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+    <span class="n">M</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">theta</span><span class="p">)</span> <span class="o">-</span> <span class="mi">2</span>
+    
+    <span class="n">A</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="n">R</span><span class="p">)</span>
+    <span class="n">B</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="n">np</span><span class="p">.</span><span class="n">square</span><span class="p">(</span><span class="n">R</span><span class="p">))</span>
+    <span class="n">S</span> <span class="o">=</span> <span class="n">A</span> <span class="o">/</span> <span class="n">np</span><span class="p">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">B</span> <span class="o">-</span> <span class="n">A</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">dSdA</span> <span class="o">=</span> <span class="n">S</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">+</span> <span class="n">S</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">/</span> <span class="n">A</span>
+    <span class="n">dSdB</span> <span class="o">=</span> <span class="o">-</span><span class="n">S</span> <span class="o">**</span> <span class="mi">3</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">/</span> <span class="n">A</span> <span class="o">**</span> <span class="mi">2</span>
+    <span class="n">dAdR</span> <span class="o">=</span> <span class="mf">1.</span> <span class="o">/</span> <span class="n">T</span>
+    <span class="n">dBdR</span> <span class="o">=</span> <span class="mf">2.</span> <span class="o">/</span> <span class="n">T</span> <span class="o">*</span> <span class="n">R</span>
+    
+    <span class="n">grad</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># initialize gradient
+</span>    <span class="n">dFpdtheta</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">M</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>  <span class="c1"># for storing previous dFdtheta
+</span>    
+    <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+        <span class="n">xt</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">concatenate</span><span class="p">([[</span><span class="mi">1</span><span class="p">],</span> <span class="n">x</span><span class="p">[</span><span class="n">t</span> <span class="o">-</span> <span class="n">M</span><span class="p">:</span><span class="n">t</span><span class="p">],</span> <span class="p">[</span><span class="n">Ft</span><span class="p">[</span><span class="n">t</span><span class="o">-</span><span class="mi">1</span><span class="p">]]])</span>
+        <span class="n">dRdF</span> <span class="o">=</span> <span class="o">-</span><span class="n">delta</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">sign</span><span class="p">(</span><span class="n">Ft</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">Ft</span><span class="p">[</span><span class="n">t</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">dRdFp</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">+</span> <span class="n">delta</span> <span class="o">*</span> <span class="n">np</span><span class="p">.</span><span class="n">sign</span><span class="p">(</span><span class="n">Ft</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">-</span> <span class="n">Ft</span><span class="p">[</span><span class="n">t</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">dFdtheta</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">Ft</span><span class="p">[</span><span class="n">t</span><span class="p">]</span> <span class="o">**</span> <span class="mi">2</span><span class="p">)</span> <span class="o">*</span> <span class="p">(</span><span class="n">xt</span> <span class="o">+</span> <span class="n">theta</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="n">dFpdtheta</span><span class="p">)</span>
+        <span class="n">dSdtheta</span> <span class="o">=</span> <span class="p">(</span><span class="n">dSdA</span> <span class="o">*</span> <span class="n">dAdR</span> <span class="o">+</span> <span class="n">dSdB</span> <span class="o">*</span> <span class="n">dBdR</span><span class="p">[</span><span class="n">t</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">dRdF</span> <span class="o">*</span> <span class="n">dFdtheta</span> <span class="o">+</span> <span class="n">dRdFp</span> <span class="o">*</span> <span class="n">dFpdtheta</span><span class="p">)</span>
+        <span class="n">grad</span> <span class="o">=</span> <span class="n">grad</span> <span class="o">+</span> <span class="n">dSdtheta</span>
+        <span class="n">dFpdtheta</span> <span class="o">=</span> <span class="n">dFdtheta</span>
+
+        
+    <span class="k">return</span> <span class="n">grad</span><span class="p">,</span> <span class="n">S</span>
+</code></pre></div></div>
+
+<h2 id="training">Training</h2>
+
+<p>Now that we have our gradient function, we can optimize our parameters using gradient ascent. Like the last post, we will update our $\theta$ each epoch using $\theta = \theta + \alpha{dS _T \over d\theta}$, where $\alpha$ is our learning rate.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">commission</span><span class="o">=</span><span class="mf">0.0025</span><span class="p">,</span> <span class="n">learning_rate</span> <span class="o">=</span> <span class="mf">0.3</span><span class="p">):</span>
+    <span class="n">theta</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">rand</span><span class="p">(</span><span class="n">M</span> <span class="o">+</span> <span class="mi">2</span><span class="p">)</span>
+    <span class="n">sharpes</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">epochs</span><span class="p">)</span> <span class="c1"># store sharpes over time
+</span>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">epochs</span><span class="p">):</span>
+        <span class="n">grad</span><span class="p">,</span> <span class="n">sharpe</span> <span class="o">=</span> <span class="n">gradient</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">theta</span><span class="p">,</span> <span class="n">commission</span><span class="p">)</span>
+        <span class="n">theta</span> <span class="o">=</span> <span class="n">theta</span> <span class="o">+</span> <span class="n">grad</span> <span class="o">*</span> <span class="n">learning_rate</span>
+
+        <span class="n">sharpes</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">sharpe</span>
+    
+    
+    <span class="k">print</span><span class="p">(</span><span class="s">"finished training"</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">theta</span><span class="p">,</span> <span class="n">sharpes</span>
+</code></pre></div></div>
+
+<h1 id="trading-with-bitcoin">Trading with Bitcoin</h1>
+
+<p>Now that we have our model, let’s test it using historical bitcoin data. I will be using a history of all bitcoin transactions on the Bitstamp exchange, downloaded from <a href="https://api.bitcoincharts.com/v1/csv/">bitcoincharts.com</a>. Let’s load it in:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="o">%</span><span class="n">matplotlib</span> <span class="n">inline</span>
+<span class="kn">import</span> <span class="nn">matplotlib.pyplot</span> <span class="k">as</span> <span class="n">plt</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s">"figure.figsize"</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">5</span><span class="p">,</span> <span class="mi">3</span><span class="p">)</span> <span class="c1"># (w, h)
+</span><span class="n">plt</span><span class="p">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s">"figure.dpi"</span><span class="p">]</span> <span class="o">=</span> <span class="mi">150</span>
+<span class="kn">import</span> <span class="nn">pandas</span> <span class="k">as</span> <span class="n">pd</span>
+
+<span class="n">btc</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">read_csv</span><span class="p">(</span><span class="s">"bitstampUSD.csv"</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="p">[</span><span class="s">"utc"</span><span class="p">,</span> <span class="s">"price"</span><span class="p">,</span> <span class="s">"volume"</span><span class="p">]).</span><span class="n">set_index</span><span class="p">(</span><span class="s">'utc'</span><span class="p">)</span>
+<span class="n">btc</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">pd</span><span class="p">.</span><span class="n">to_datetime</span><span class="p">(</span><span class="n">btc</span><span class="p">.</span><span class="n">index</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s">'s'</span><span class="p">)</span>
+<span class="n">rets</span> <span class="o">=</span> <span class="n">btc</span><span class="p">[</span><span class="s">'price'</span><span class="p">].</span><span class="n">diff</span><span class="p">()[</span><span class="mi">1</span><span class="p">:]</span>
+</code></pre></div></div>
+
+<p>For this strategy we will train the model on 1000 samples, and then trade on the next 200 samples. Let’s split the data into training and test data, then normalize with the training data.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">array</span><span class="p">(</span><span class="n">rets</span><span class="p">)</span>
+
+<span class="n">N</span> <span class="o">=</span> <span class="mi">1000</span>
+<span class="n">P</span> <span class="o">=</span> <span class="mi">200</span>
+<span class="n">x_train</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="p">(</span><span class="n">N</span><span class="o">+</span><span class="n">P</span><span class="p">):</span><span class="o">-</span><span class="n">P</span><span class="p">]</span>
+<span class="n">x_test</span> <span class="o">=</span> <span class="n">x</span><span class="p">[</span><span class="o">-</span><span class="n">P</span><span class="p">:]</span>
+
+<span class="n">std</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">std</span><span class="p">(</span><span class="n">x_train</span><span class="p">)</span>
+<span class="n">mean</span> <span class="o">=</span> <span class="n">np</span><span class="p">.</span><span class="n">mean</span><span class="p">(</span><span class="n">x_train</span><span class="p">)</span>
+
+<span class="n">x_train</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_train</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+<span class="n">x_test</span> <span class="o">=</span> <span class="p">(</span><span class="n">x_test</span> <span class="o">-</span> <span class="n">mean</span><span class="p">)</span> <span class="o">/</span> <span class="n">std</span>
+</code></pre></div></div>
+
+<p>Now we’re ready to train! We’ll give the model a look-back window of 8 ticks.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">np</span><span class="p">.</span><span class="n">random</span><span class="p">.</span><span class="n">seed</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="n">theta</span><span class="p">,</span> <span class="n">sharpes</span> <span class="o">=</span> <span class="n">train</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">2000</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">8</span><span class="p">,</span> <span class="n">commission</span><span class="o">=</span><span class="mf">0.0025</span><span class="p">,</span> <span class="n">learning_rate</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+</code></pre></div></div>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>finished training
+</code></pre></div></div>
+
+<p>In order to see how well the training did, we can graph the resulting Sharpe ratio over each epoch, and hopefully see it converge to a maximum.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">sharpes</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'Epoch Number'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'Sharpe Ratio'</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-06-04-trading-with-reinforcement-learning-in-python-part-ii-application_36_0.png" alt="png" /></p>
+
+<p>We can see that as the model trains, it converges towards a maximum Sharpe Ratio. Lets see how the model performed over the training data:</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">train_returns</span> <span class="o">=</span> <span class="n">returns</span><span class="p">(</span><span class="n">positions</span><span class="p">(</span><span class="n">x_train</span><span class="p">,</span> <span class="n">theta</span><span class="p">),</span> <span class="n">x_train</span><span class="p">,</span> <span class="mf">0.0025</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">((</span><span class="n">train_returns</span><span class="p">).</span><span class="n">cumsum</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s">"Reinforcement Learning Model"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_train</span><span class="p">.</span><span class="n">cumsum</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s">"Buy and Hold"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'Ticks'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'Cumulative Returns'</span><span class="p">);</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"RL Model vs. Buy and Hold - Training Data"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-06-04-trading-with-reinforcement-learning-in-python-part-ii-application_38_0.png" alt="png" /></p>
+
+<p>We can see that, over the training data, our reinforcement learning model greatly outperformed simply buying and holding the asset. Lets see how it does over the next 200 ticks, which have been held out from the model.</p>
+
+<div class="language-python highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="n">test_returns</span> <span class="o">=</span> <span class="n">returns</span><span class="p">(</span><span class="n">positions</span><span class="p">(</span><span class="n">x_test</span><span class="p">,</span> <span class="n">theta</span><span class="p">),</span> <span class="n">x_test</span><span class="p">,</span> <span class="mf">0.0025</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">((</span><span class="n">test_returns</span><span class="p">).</span><span class="n">cumsum</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s">"Reinforcement Learning Model"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">plot</span><span class="p">(</span><span class="n">x_test</span><span class="p">.</span><span class="n">cumsum</span><span class="p">(),</span> <span class="n">label</span><span class="o">=</span><span class="s">"Buy and Hold"</span><span class="p">,</span> <span class="n">linewidth</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s">'Ticks'</span><span class="p">)</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s">'Cumulative Returns'</span><span class="p">);</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">legend</span><span class="p">()</span>
+<span class="n">plt</span><span class="p">.</span><span class="n">title</span><span class="p">(</span><span class="s">"RL Model vs. Buy and Hold - Test Data"</span><span class="p">);</span>
+</code></pre></div></div>
+
+<p><img src="/images/2019-06-04-trading-with-reinforcement-learning-in-python-part-ii-application_40_0.png" alt="png" /></p>
+
+<p>Once again the model outperforms the asset! This model may be able to be improved by engineering more features (inputs), but it is a great start. If you found this post useful, be sure to cite my paper, <a href="https://www.mdpi.com/1911-8074/13/8/178">Cryptocurrency Trading Using Machine Learning</a>:</p>
+
+<div class="highlighter-rouge"><div class="highlight"><pre class="highlight"><code>@article{koker2020cryptocurrency,
+  title={Cryptocurrency Trading Using Machine Learning},
+  author={Koker, Thomas E and Koutmos, Dimitrios},
+  journal={Journal of Risk and Financial Management},
+  volume={13},
+  number={8},
+  pages={178},
+  year={2020},
+  publisher={Multidisciplinary Digital Publishing Institute}
+}
+</code></pre></div></div>
+
+<p>As always, the notebook for this post is available on my <a href="https://github.com/teddykoker/blog/tree/master/_notebooks">Github</a>.</p>
+
+<hr>
+<ol class="bibliography"></ol>
+
+</div>
+</body>
+</html>
