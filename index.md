@@ -28,7 +28,7 @@ npj Computational Materials, 2024. Also at NeurIPS AI for Science Workshop, 2023
 <br>
 *UniTS: Building a Unified Time Series Model*<br>
 Shanghua Gao, **Teddy Koker**, Owen Queen, Thomas Hartvigsen, Theodoros Tsiligkaridis, Marinka Zitnik.<br>
-Preprint.<br>
+NeurIPS, 2024.<br>
 [arXiv](https://arxiv.org/abs/2403.00131) / [Code](https://github.com/mims-harvard/UniTS) / [Website](https://zitniklab.hms.harvard.edu/projects/UniTS/)
 
 <br>
