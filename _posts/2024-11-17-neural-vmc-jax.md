@@ -43,7 +43,7 @@ associated wavefunction, $\psi_0$.
 The variational principle states that for any *trial wavefunction* $\tilde{\psi}$,
 
 $$
- E_\text{var} 
+ E_v
  = \frac{\braket{\tilde{\psi}|\hat{H}|\tilde{\psi}}}{\braket{\tilde{\psi}|\tilde{\psi}}}
  \geq E_0
 $$
@@ -106,7 +106,7 @@ in space and is often used for variational Monte Carlo calculations. This can be
 written as:
 
 $$
-\hat{H} = -\frac{1}{2}\sum_i \nabla^2_i + \sum_{i>j} \frac{1}{|\mathbf{r}_i - \mathbf{r}_j|} - \sum_{iI} \frac{Z_I}{|\mathbf{r}_i - \mathbf{R}_j|} + \sum_{I>J} \frac{Z_I Z_J}{|\mathbf{R}_I - \mathbf{R}_J|}
+\hat{H} = -\frac{1}{2}\sum_i \nabla^2_i + \sum_{i>j} \frac{1}{|\mathbf{r}_i - \mathbf{r}_j|} - \sum_{iI} \frac{Z_I}{|\mathbf{r}_i - \mathbf{R}_I|} + \sum_{I>J} \frac{Z_I Z_J}{|\mathbf{R}_I - \mathbf{R}_J|}
 $$
 
 where $\nabla^2$ is the Laplacian with respect to electron $i$, $\mathbf{r}_i$
