@@ -19,6 +19,12 @@ Previously, I have worked at [MIT Lincoln Laboratory](https://www.ll.mit.edu/), 
 I am broadly interested in machine learning and its applications to the computational sciences. My most recent work focuses on deep learning within the field of computational chemistry and materials science.
 
 <br>
+*Training a Foundation Model for Materials on a Budget*<br>
+**Teddy Koker**, Tess Smidt.<br>
+Preprint.<br>
+[arXiv](https://arxiv.org/abs/2508.16067) / [Code](https://github.com/atomicarchitects/nequix)
+
+<br>
 *Higher-Order Equivariant Neural Networks
 for Charge Density Prediction in Materials*<br>
 **Teddy Koker**, Keegan Quigley, Eric Taw, Kevin Tibbetts, Lin Li.<br>
