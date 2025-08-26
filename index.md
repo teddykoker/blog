@@ -7,7 +7,7 @@ layout: page
 
 # Teddy Koker
 
-I am a first-year PhD student at [MIT EECS](https://www.eecs.mit.edu/), advised by Professor [Tess Smidt](https://blondegeek.github.io/).
+I am a PhD student at [MIT EECS](https://www.eecs.mit.edu/), advised by Professor [Tess Smidt](https://blondegeek.github.io/).
 
 Previously, I have worked at [MIT Lincoln Laboratory](https://www.ll.mit.edu/), [Lightning AI](https://lightning.ai/) and [Harvard Medical School](https://hms.harvard.edu/).
 
