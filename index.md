@@ -21,7 +21,7 @@ I am broadly interested in machine learning and its applications to the computat
 <br>
 *Training a Foundation Model for Materials on a Budget*<br>
 **Teddy Koker**, Tess Smidt.<br>
-Preprint.<br>
+NeurIPS AI for Accelerated Materials Design Workshop, 2025.<br>
 [arXiv](https://arxiv.org/abs/2508.16067) / [Code](https://github.com/atomicarchitects/nequix)
 
 <br>
