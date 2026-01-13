@@ -22,7 +22,7 @@ I am broadly interested in machine learning and its applications to the computat
 *PFT: Phonon fine-tuning for Machine Learned Interatomic Potentials*<br>
 **Teddy Koker**, Abhijeet Gangan, Mit Kotak, Jaime Marian, Tess Smidt.<br>
 Preprint.<br>
-[arXiv](/docs/pft.pdf) / [Code](https://github.com/atomicarchitects/nequix)
+[arXiv](https://arxiv.org/abs/2601.07742) / [Code](https://github.com/atomicarchitects/nequix)
 
 <br>
 *Training a Foundation Model for Materials on a Budget*<br>
