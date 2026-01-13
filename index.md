@@ -19,6 +19,12 @@ Previously, I have worked at [MIT Lincoln Laboratory](https://www.ll.mit.edu/), 
 I am broadly interested in machine learning and its applications to the computational sciences. My most recent work focuses on deep learning within the field of computational chemistry and materials science.
 
 <br>
+*PFT: Phonon fine-tuning for Machine Learned Interatomic Potentials*<br>
+**Teddy Koker**, Abhijeet Gangan, Mit Kotak, Jaime Marian, Tess Smidt.<br>
+Preprint.<br>
+[arXiv](/docs/pft.pdf) / [Code](https://github.com/atomicarchitects/nequix)
+
+<br>
 *Training a Foundation Model for Materials on a Budget*<br>
 **Teddy Koker**, Mit Kotak, Tess Smidt.<br>
 NeurIPS AI for Accelerated Materials Design Workshop, 2025.<br>
