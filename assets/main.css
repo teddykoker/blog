@@ -42,3 +42,19 @@ nav {
     display: inline;
     margin-right: 10px;
 }
+
+table {
+    border-collapse: collapse;
+    margin-left: auto;
+    margin-right: auto;
+    border-top: 2px solid black;
+    border-bottom: 2px solid black;
+}
+table th,
+table td {
+    padding-left: 1.25em;
+    padding-right: 1.25em;
+}
+table th {
+    border-bottom: 1px solid black;
+}

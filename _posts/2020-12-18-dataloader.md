@@ -315,5 +315,6 @@ recommend trying a few values to see what works best.
 
 
 Overall, the `DataLoader` is a great tool for deep learning, and building one
-from scratch is a great way to understand how and why it works. As Richard
-Feynman wrote, "What I cannot create, I do not understand".
+from scratch is a great way to understand how and why it works. I have since
+used this in many projects, such as my JAX-based codebase for training
+interatomic potentials, [Nequix](https://github.com/atomicarchitects/nequix).
