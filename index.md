@@ -9,7 +9,7 @@ layout: page
 
 I am a PhD student at [MIT EECS](https://www.eecs.mit.edu/), advised by Professor [Tess Smidt](https://blondegeek.github.io/).
 
-Previously, I have worked at [MIT Lincoln Laboratory](https://www.ll.mit.edu/), [Lightning AI](https://lightning.ai/) and [Harvard Medical School](https://hms.harvard.edu/).
+Previously, I spent several years as a technical staff member at MIT Lincoln Laboratory, and performed research at Lightning AI and Harvard Medical School.
 
 [Email](mailto:teddy.koker@gmail.com) / [CV](/koker_cv.pdf) / [Github](https://github.com/teddykoker) / [Google Scholar](https://scholar.google.com/citations?user=br990A8AAAAJ) / [Twitter](https://twitter.com/teddykoker)
 
@@ -22,7 +22,7 @@ I am broadly interested in machine learning and its applications to the computat
 *PFT: Phonon fine-tuning for Machine Learned Interatomic Potentials*<br>
 **Teddy Koker**, Abhijeet Gangan, Mit Kotak, Jaime Marian, Tess Smidt.<br>
 Preprint.<br>
-[arXiv](https://arxiv.org/abs/2601.07742) / [Code](https://github.com/atomicarchitects/nequix)
+[arXiv](https://arxiv.org/abs/2601.07742) / [Code](https://github.com/atomicarchitects/nequix) / [Blog](/2026/02/pft/)
 
 <br>
 *Training a Foundation Model for Materials on a Budget*<br>
