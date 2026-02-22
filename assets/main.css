@@ -7,12 +7,37 @@ img {
     vertical-align: middle;
 }
 
+body {
+    background-color: #d5d5d5;
+    margin: 0;
+    padding: 1em;
+}
+
+@media (max-width: 700px) {
+    body {
+        padding: 0;
+    }
+}
+
+@media print {
+    .content {
+        box-shadow: none;
+    }
+    body {
+        padding: 0;
+        background-color: white;
+    }
+}
+  
 .content {
+    background-color: white;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.3);
     margin-left: auto;
     margin-right: auto;
     padding-left: 1em;
     padding-right: 1em;
     padding-bottom: 100px;
+    padding-top: 0.5em;
     max-width: 700px;
     line-height: 1.5;
 }
