@@ -16,8 +16,9 @@ Previously, I spent several years as a technical staff member at MIT Lincoln Lab
 <div style="margin: 1em 0;">
   <div id="molecule-viewer" style="width: 100%; height: 350px;"></div>
   <br>
-  <small>Molecular dynamics simulation of NaCl in water with the
-   <a href="https://arxiv.org/abs/2508.16067">Nequix MP</a> interatomic potential (<a href="https://github.com/teddykoker/nequix-examples/tree/main/nacl-dissolution#readme">details</a>).</small>
+  <small>Dissolution of a NaCl nanocrystal in water, simulated with the
+   <a href="https://arxiv.org/abs/2508.16067">Nequix MP</a> interatomic potential (<a href="https://github.com/teddykoker/nequix-examples/tree/main/nacl-dissolution#readme">details</a>).
+  </small>
   <div>
   <button id="play-btn">Play</button>
   <small id="frame-info"></small>
