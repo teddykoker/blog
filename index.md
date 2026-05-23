@@ -7,7 +7,7 @@ layout: page
 
 # Teddy Koker
 
-I am a PhD student at [MIT EECS](https://www.eecs.mit.edu/), advised by Professor [Tess Smidt](https://blondegeek.github.io/).
+I am a PhD student at [MIT EECS](https://www.eecs.mit.edu/), advised by Professor [Tess Smidt](https://blondegeek.github.io/). I am currently an intern at [Periodic Labs](https://periodic.com/).
 
 Previously, I spent several years as a technical staff member at MIT Lincoln Laboratory, and performed research at Lightning AI and Harvard Medical School.
 
@@ -164,6 +164,11 @@ Previously, I spent several years as a technical staff member at MIT Lincoln Lab
     renderer.setSize(container.clientWidth, container.clientHeight);
   }).observe(container);
 </script>
+
+## News
+
+ * 2026-05-18: This summer I will be in the Bay Area interning at [Periodic Labs](https://periodic.com/). Reach out if you are in the area and want to meet up!
+ * 2026-04-30: [Phonon Fine-tuning](https://arxiv.org/abs/2601.07742) was accepted at ICML. I will be presenting the work July 6-11 in Seoul, South Korea.
 
 ## Research
 
